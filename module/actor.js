@@ -22,6 +22,10 @@ export class MyActor extends Actor {
     sys.belly       = num(sys.belly, 100);
     sys.type1 = String(sys.type1 ?? "");
     sys.type2 = String(sys.type2 ?? "");
+    sys.pasiva = String(sys.pasiva ?? "");
+    sys.destino = String(sys.destino ?? "");
+    sys.leyenda = String(sys.leyenda ?? "");
+    sys.background = String(sys.background ?? "");
 
 
     // HP (opcionalmente clamp si lo deseas)
