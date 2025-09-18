@@ -54,6 +54,11 @@ export class MyActorSheet extends ActorSheet {
       this._rollSkill(el.dataset.skill, el.dataset.label ?? el.dataset.skill);
     });
 
+    html.find("[data-action='restore-actor']").on("click", async (ev) => {
+      ev.preventDefault();
+      await this._restoreActorResources();
+    });
+
     // Movimientos
     html.find("[data-action='create-move']").on("click", async () => {
       const created = await this.actor.createEmbeddedDocuments("Item", [{
@@ -79,6 +84,39 @@ export class MyActorSheet extends ActorSheet {
       const item = this.actor.items.get(id);
       if (item) await this._useMove(item);
     });
+  }
+
+  async _restoreActorResources() {
+    const actorUpdates = {};
+    const maxHP = Number(this.actor.system?.hp?.max);
+    if (Number.isFinite(maxHP)) {
+      actorUpdates["system.hp.value"] = Math.max(0, maxHP);
+    }
+
+    const moveUpdates = this.actor.items
+      .filter((item) => item.type === "move")
+      .map((item) => {
+        const maxPP = Number(item.system?.pp?.max);
+        if (!Number.isFinite(maxPP)) return null;
+        return { _id: item.id, "system.pp.value": Math.max(0, maxPP) };
+      })
+      .filter((update) => update !== null);
+
+    const updateTasks = [];
+    if (Object.keys(actorUpdates).length) {
+      updateTasks.push(this.actor.update(actorUpdates));
+    }
+    if (moveUpdates.length) {
+      updateTasks.push(this.actor.updateEmbeddedDocuments("Item", moveUpdates));
+    }
+
+    if (!updateTasks.length) {
+      ui.notifications?.warn("No se encontraron valores de HP o PP para restaurar.");
+      return;
+    }
+
+    await Promise.all(updateTasks);
+    ui.notifications?.info("HP y PP restaurados.");
   }
 
   /* -------------------- Tiradas de HABILIDAD -------------------- */

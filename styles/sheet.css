@@ -13,6 +13,19 @@
   gap: 6px 12px;
 }
 
+.my-sheet .grid.two-col .stat.full-width {
+  grid-column: 1 / -1;
+}
+
+.my-sheet .grid.two-col .stat.restore-resources {
+  display: flex;
+  align-items: flex-end;
+}
+
+.my-sheet .grid.two-col .stat.restore-resources button {
+  width: 100%;
+}
+
 .my-sheet .grid.three-col {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
