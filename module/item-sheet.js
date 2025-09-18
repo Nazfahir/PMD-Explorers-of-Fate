@@ -2,8 +2,8 @@
 export class MoveItemSheet extends ItemSheet {
   static get defaultOptions() {
     return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ["my-basic-system", "sheet", "item"],
-      template: "systems/my-basic-system/templates/item-move-sheet.hbs",
+      classes: ["PMD-Explorers-of-Fate", "sheet", "item"],
+      template: "systems/PMD-Explorers-of-Fate/templates/item-move-sheet.hbs",
       width: 480,
       height: 420,
       tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "details" }],
