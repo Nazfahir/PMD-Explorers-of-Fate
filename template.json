@@ -13,6 +13,10 @@
         "stab": 0,
         "basicattack": 0,
         "belly": 0,
+        "pasiva": "",
+        "destino": "",
+        "leyenda": "",
+        "background": "",
         "skills": {
           "athletics": 15,
           "craft": 15,
