@@ -1,0 +1,99 @@
+/* === Estilos base para la hoja de actor === */
+.my-basic-system.sheet.actor .my-sheet {
+  padding: 0.5rem;
+}
+
+.my-sheet .sheet-header .header-fields {
+  flex: 1;
+}
+
+.my-sheet .grid.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+
+.my-sheet .grid.three-col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px 12px;
+}
+
+.my-sheet label {
+  font-weight: bold;
+  font-size: 12px;
+  color: var(--color-text-dark-6);
+}
+
+.my-sheet input[type="number"],
+.my-sheet input[type="text"],
+.my-sheet textarea,
+.my-sheet select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* === Botón que se ve como enlace (para lanzar habilidades) === */
+.my-sheet .skill-label .as-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--color-text-link, #4b74ff);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.my-sheet .skill-label .as-link:hover {
+  text-decoration: underline;
+}
+
+/* === Estilos para resultados en el chat === */
+.roll-success {
+  color: var(--color-level-success, #2e9b2e);
+  font-weight: 700;
+}
+
+.roll-failure {
+  color: var(--color-level-error, #c92c2c);
+  font-weight: 700;
+}
+
+/* === Lista de movimientos en la ficha === */
+.my-basic-system.sheet.actor .item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.my-basic-system.sheet.actor .item-list .item-header {
+  font-weight: 700;
+  border-bottom: 1px solid var(--color-border, rgba(0,0,0,.2));
+  padding: 4px 0;
+}
+
+.my-basic-system.sheet.actor .item-list .item {
+  align-items: center;
+  border-bottom: 1px dashed var(--color-border, rgba(0,0,0,.1));
+  padding: 4px 0;
+}
+
+.my-basic-system.sheet.actor .item-list .item .item-name {
+  flex: 2;
+}
+
+.my-basic-system.sheet.actor .item-list .item .item-prop {
+  flex: 0 0 70px;
+  text-align: center;
+}
+
+.my-basic-system.sheet.actor .item-list .item .item-controls a {
+  margin-left: 6px;
+}
+
+.my-basic-system.sheet.actor .item-list .item-summary {
+  padding: 0 0 6px 0;
+  color: var(--color-text-dark-5);
+  font-style: italic;
+}

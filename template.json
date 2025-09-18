@@ -1,0 +1,49 @@
+{
+  "Actor": {
+    "types": ["creature"],
+    "templates": {
+      "baseCreature": {
+        "lvl": 1,
+        "hp": { "max": 10, "value": 10 },
+        "attack": 0,
+        "spAttack": 0,
+        "defense": 0,
+        "spDefense": 0,
+        "speed": 0,
+        "stab": 0,
+        "basicattack": 0,
+        "belly": 0,
+        "skills": {
+          "athletics": 15,
+          "craft": 15,
+          "endurance": 15,
+          "finesse": 15,
+          "medicine": 15,
+          "perception": 15,
+          "performance": 15,
+          "persuasion": 15,
+          "spKnowledge": 15,
+          "stealth": 15,
+          "survival": 15
+        },
+        "type1": "",
+        "type2": ""
+      }
+    },
+    "creature": {
+      "templates": ["baseCreature"]
+    }
+  },
+  "Item": {
+    "types": ["move"],
+    "move": {
+      "range": "",
+      "pp": { "max": 10, "value": 10 },
+      "accuracy": 75,
+      "category": "physical",
+      "effect": "",
+      "element": "",
+      "baseDamage": 10
+    }
+  }
+}

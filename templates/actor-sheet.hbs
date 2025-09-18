@@ -1,0 +1,179 @@
+<form class="{{cssClass}} my-sheet" autocomplete="off">
+  <!-- ===== Encabezado ===== -->
+  <header class="sheet-header flexrow">
+    <div class="header-fields">
+      <label>Nombre</label>
+      <input type="text" name="name" value="{{actor.name}}" />
+
+      <div class="grid two-col">
+        <div>
+          <label>Nivel</label>
+          <input type="number" name="system.lvl" value="{{system.lvl}}" data-dtype="Number"/>
+        </div>
+        <div>
+          <label>Velocidad</label>
+          <input type="number" name="system.speed" value="{{system.speed}}" data-dtype="Number"/>
+        </div>
+
+        <!-- Nuevos campos: Tipo 1 y Tipo 2 -->
+        <div>
+          <label>Tipo 1</label>
+          <input type="text" name="system.type1" value="{{system.type1}}"/>
+        </div>
+        <div>
+          <label>Tipo 2</label>
+          <input type="text" name="system.type2" value="{{system.type2}}"/>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== Tabs ===== -->
+  <nav class="sheet-tabs tabs" data-group="primary">
+    <a class="item" data-tab="stats">Atributos</a>
+    <a class="item" data-tab="skills">Habilidades</a>
+    <a class="item" data-tab="moves">Movimientos</a>
+  </nav>
+
+  <section class="sheet-body">
+    <!-- ===== TAB: Atributos ===== -->
+    <div class="tab" data-tab="stats" data-group="primary">
+      <div class="grid two-col">
+        <div class="stat">
+          <label>HP Actual</label>
+          <input type="number" name="system.hp.value" value="{{system.hp.value}}" data-dtype="Number"/>
+        </div>
+        <div class="stat">
+          <label>HP Máxima</label>
+          <input type="number" name="system.hp.max" value="{{system.hp.max}}" data-dtype="Number"/>
+        </div>
+
+        <div class="stat">
+          <label>Attack</label>
+          <input type="number" name="system.attack" value="{{system.attack}}" data-dtype="Number"/>
+        </div>
+        <div class="stat">
+          <label>Sp. Attack</label>
+          <input type="number" name="system.spAttack" value="{{system.spAttack}}" data-dtype="Number"/>
+        </div>
+
+        <div class="stat">
+          <label>Defense</label>
+          <input type="number" name="system.defense" value="{{system.defense}}" data-dtype="Number"/>
+        </div>
+        <div class="stat">
+          <label>Sp. Defense</label>
+          <input type="number" name="system.spDefense" value="{{system.spDefense}}" data-dtype="Number"/>
+        </div>
+
+        <div class="stat">
+          <label>STAB</label>
+          <input type="number" name="system.stab" value="{{system.stab}}" data-dtype="Number"/>
+        </div>
+        <div class="stat">
+          <label>Basic Attack</label>
+          <input type="number" name="system.basicattack" value="{{system.basicattack}}" data-dtype="Number"/>
+        </div>
+
+        <div class="stat">
+          <label>Belly</label>
+          <input type="number" name="system.belly" value="{{system.belly}}" data-dtype="Number"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TAB: Habilidades ===== -->
+    <div class="tab" data-tab="skills" data-group="primary">
+      <div class="grid three-col">
+        {{#each skillList}}
+          <div class="stat">
+            <!-- Nombre clicable para tirar -->
+            <label class="skill-label">
+              <button type="button"
+                      class="as-link"
+                      data-action="roll-skill"
+                      data-skill="{{key}}"
+                      data-label="{{label}}">
+                {{label}}
+              </button>
+            </label>
+            <input
+              type="number"
+              name="system.skills.{{key}}"
+              value="{{lookup ../system.skills key}}"
+              data-dtype="Number"
+              min="{{../skillMin}}"
+              max="{{../skillMax}}"
+              step="1"
+            />
+          </div>
+        {{/each}}
+      </div>
+
+      <p class="notes small" style="margin-top:6px;">
+        Tirada: d100 &lt; valor (Normal) · d100 &lt; ceil(valor/2) (Crítica).
+      </p>
+    </div>
+
+<!-- ===== TAB: Movimientos ===== -->
+<div class="tab" data-tab="moves" data-group="primary">
+  <div class="flexrow" style="justify-content: space-between; align-items: center; margin-bottom: 6px;">
+    <h3 style="margin:0;">Movimientos</h3>
+    <button type="button" data-action="create-move">+ Nuevo movimiento</button>
+  </div>
+
+  {{#if moves.length}}
+    <ol class="item-list">
+      <li class="item item-header flexrow">
+        <div class="item-name">Nombre</div>
+        <div class="item-prop">Tipo</div>
+        <div class="item-prop">Cat.</div>
+        <div class="item-prop">Prec.</div>
+        <div class="item-prop">PP</div>
+        <div class="item-prop">Daño</div>
+        <div class="item-prop">Rango</div>
+        <div class="item-controls"></div>
+      </li>
+
+      {{#each moves as |m|}}
+        <li class="item flexrow" data-item-id="{{m.id}}">
+          <div class="item-name"><a data-action="edit-move">{{m.name}}</a></div>
+          <div class="item-prop">{{m.system.element}}</div>
+
+          <!-- Cat.: Fís / Esp / Estado -->
+          <div class="item-prop">
+            {{#if (eq m.system.category "special")}}
+              Esp
+            {{else}}
+              {{#if (eq m.system.category "status")}}
+                Estado
+              {{else}}
+                Fís
+              {{/if}}
+            {{/if}}
+          </div>
+
+          <div class="item-prop">{{m.system.accuracy}}</div>
+          <div class="item-prop">{{m.system.pp.value}}/{{m.system.pp.max}}</div>
+          <div class="item-prop">{{m.system.baseDamage}}</div>
+          <div class="item-prop">{{m.system.range}}</div>
+          <div class="item-controls">
+            <button type="button" class="as-link" data-action="use-move" title="Usar">Usar</button>
+            <a data-action="edit-move" title="Editar"><i class="fas fa-edit"></i></a>
+            <a data-action="delete-move" title="Eliminar"><i class="fas fa-trash"></i></a>
+          </div>
+        </li>
+
+        {{#if m.system.effect}}
+          <li class="item item-summary">
+            <div class="item-effect">{{m.system.effect}}</div>
+          </li>
+        {{/if}}
+      {{/each}}
+    </ol>
+  {{else}}
+    <p class="notes">Arrastra Items tipo <b>Movimiento</b> o usa “+ Nuevo movimiento”.</p>
+  {{/if}}
+</div>
+  </section>
+</form>

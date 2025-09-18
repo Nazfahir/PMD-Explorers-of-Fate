@@ -1,0 +1,22 @@
+{
+  "id": "my-basic-system",
+  "title": "Pokemon Mistery Dungeon Explorer of Fate",
+  "description": "Sistema de PMD Explorer of fate 1.6",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "12",
+    "verified": "12"
+  },
+  "authors": [{ "name": "BaronVonBairon" }],
+  "esmodules": ["module/init.js"],
+  "styles": ["styles/sheet.css"],
+  "languages": [
+    { "lang": "es", "name": "Español", "path": "lang/es.json" }
+  ],
+  "packs": [],
+  "template": "template.json",
+  "gridDistance": 1,
+  "gridUnits": "espacio",
+  "url": "https://example.com",
+  "license": "LICENSE"
+}
