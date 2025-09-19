@@ -55,8 +55,8 @@
   box-sizing: border-box;
 }
 
-/* === Botón que se ve como enlace (para lanzar habilidades) === */
-.my-sheet .skill-label .as-link {
+/* === Botón que se ve como enlace === */
+.PMD-Explorers-of-Fate .as-link {
   background: none;
   border: 0;
   padding: 0;
@@ -67,7 +67,7 @@
   text-decoration: none;
 }
 
-.my-sheet .skill-label .as-link:hover {
+.PMD-Explorers-of-Fate .as-link:hover {
   text-decoration: underline;
 }
 

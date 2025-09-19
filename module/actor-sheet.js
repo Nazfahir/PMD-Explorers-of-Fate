@@ -43,6 +43,8 @@ export class MyActorSheet extends ActorSheet {
       .filter((i) => i.type === type)
       .sort((a, b) => a.name.localeCompare(b.name));
 
+    data.traits = typeList("trait");
+
     data.inventorySections = [
       {
         type: "equipment",
@@ -122,6 +124,7 @@ export class MyActorSheet extends ActorSheet {
         equipment: "Nuevo equipamiento",
         consumable: "Nuevo consumible",
         gear: "Nuevo objeto",
+        trait: "Nuevo rasgo",
       };
 
       const created = await this.actor.createEmbeddedDocuments("Item", [{
@@ -142,6 +145,20 @@ export class MyActorSheet extends ActorSheet {
       ev.preventDefault();
       const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
       if (id) await this.actor.deleteEmbeddedDocuments("Item", [id]);
+    });
+
+    html.find("[data-action='use-consumable']").on("click", async (ev) => {
+      ev.preventDefault();
+      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
+      const item = id ? this.actor.items.get(id) : null;
+      if (item) await this._consumeItem(item);
+    });
+
+    html.find("[data-action='use-gear']").on("click", async (ev) => {
+      ev.preventDefault();
+      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
+      const item = id ? this.actor.items.get(id) : null;
+      if (item) await this._useGearItem(item);
     });
   }
 
@@ -416,6 +433,56 @@ export class MyActorSheet extends ActorSheet {
     `;
 
     await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor: this.actor }), flavor });
+  }
+
+  _formatText(text) {
+    const str = String(text ?? "").trim();
+    if (!str) return "";
+    return foundry.utils.escapeHTML(str).replace(/\n/g, "<br/>");
+  }
+
+  async _consumeItem(item) {
+    const quantity = Number(item.system?.quantity ?? 0);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      ui.notifications?.warn(`No quedan usos de "${item.name}".`);
+      return;
+    }
+
+    const newQuantity = Math.max(0, quantity - 1);
+    const effectText = this._formatText(item.system?.effect ?? "");
+    const itemName = foundry.utils.escapeHTML(item.name ?? "Objeto");
+    const actorName = foundry.utils.escapeHTML(this.actor.name ?? "Personaje");
+
+    if (newQuantity > 0) {
+      await item.update({ "system.quantity": newQuantity });
+    } else {
+      await this.actor.deleteEmbeddedDocuments("Item", [item.id]);
+    }
+
+    const parts = [`<div><strong>${actorName}</strong> consumió ${itemName}.</div>`];
+    if (effectText) parts.push(`<div><strong>Efecto:</strong> ${effectText}</div>`);
+    if (newQuantity > 0) parts.push(`<div>Restantes: ${newQuantity}</div>`);
+
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      content: parts.join(""),
+    });
+  }
+
+  async _useGearItem(item) {
+    const description = this._formatText(item.system?.description ?? "");
+    const itemName = foundry.utils.escapeHTML(item.name ?? "Objeto");
+    const actorName = foundry.utils.escapeHTML(this.actor.name ?? "Personaje");
+
+    const parts = [`<div><strong>${actorName}</strong> utilizó ${itemName}.</div>`];
+    if (description) {
+      parts.push(`<div><strong>Descripción:</strong> ${description}</div>`);
+    }
+
+    await ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({ actor: this.actor }),
+      content: parts.join(""),
+    });
   }
 }
 

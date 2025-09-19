@@ -26,6 +26,7 @@ export class PMDItemSheet extends ItemSheet {
     data.isEquipment = this.item.type === "equipment";
     data.isConsumable = this.item.type === "consumable";
     data.isGear = this.item.type === "gear";
+    data.isTrait = this.item.type === "trait";
     data.itemType = this.item.type;
     return data;
   }

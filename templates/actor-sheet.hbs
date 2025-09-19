@@ -49,6 +49,7 @@
     <a class="item" data-tab="stats">Atributos</a>
     <a class="item" data-tab="skills">Habilidades</a>
     <a class="item" data-tab="moves">Movimientos</a>
+    <a class="item" data-tab="traits">Rasgos</a>
     <a class="item" data-tab="inventory">Objetos</a>
   </nav>
 
@@ -211,6 +212,43 @@
   {{/if}}
 </div>
 
+    <!-- ===== TAB: Rasgos ===== -->
+    <div class="tab" data-tab="traits" data-group="primary">
+      <div class="flexrow" style="justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <h3 style="margin:0;">Rasgos</h3>
+        <button type="button" data-action="create-item" data-type="trait">+ Nuevo rasgo</button>
+      </div>
+
+      {{#if traits.length}}
+        <ol class="item-list">
+          <li class="item item-header flexrow">
+            <div class="item-name">Nombre</div>
+            <div class="item-prop notes">Efecto</div>
+            <div class="item-controls"></div>
+          </li>
+
+          {{#each traits as |trait|}}
+            <li class="item flexrow" data-item-id="{{trait.id}}">
+              <div class="item-name"><a data-action="edit-item">{{trait.name}}</a></div>
+              <div class="item-prop notes">
+                {{#if trait.system.effect}}
+                  {{trait.system.effect}}
+                {{else}}
+                  —
+                {{/if}}
+              </div>
+              <div class="item-controls">
+                <a data-action="edit-item" title="Editar"><i class="fas fa-edit"></i></a>
+                <a data-action="delete-item" title="Eliminar"><i class="fas fa-trash"></i></a>
+              </div>
+            </li>
+          {{/each}}
+        </ol>
+      {{else}}
+        <p class="notes">Añade rasgos para registrar efectos especiales o talentos del personaje.</p>
+      {{/if}}
+    </div>
+
 <!-- ===== TAB: Objetos ===== -->
 <div class="tab" data-tab="inventory" data-group="primary">
   {{#each inventorySections as |section|}}
@@ -221,77 +259,96 @@
       </div>
 
       {{#if section.items.length}}
-        <ol class="item-list">
-          <li class="item item-header flexrow">
-            <div class="item-name">Nombre</div>
-            <div class="item-prop">Cant.</div>
-            <div class="item-prop detail">
-              {{#if (eq section.type "equipment")}}
-                Slot
-              {{else}}
-                {{#if (eq section.type "consumable")}}
-                  Usos
-                {{else}}
-                  Detalle
-                {{/if}}
-              {{/if}}
-            </div>
-            <div class="item-prop notes">Notas</div>
-            <div class="item-controls"></div>
-          </li>
+        {{#if (eq section.type "equipment")}}
+          <ol class="item-list">
+            <li class="item item-header flexrow">
+              <div class="item-name">Nombre</div>
+              <div class="item-prop">Valor</div>
+              <div class="item-prop notes">Efecto</div>
+              <div class="item-controls"></div>
+            </li>
 
-          {{#each section.items as |item|}}
-            <li class="item flexrow" data-item-id="{{item.id}}">
-              <div class="item-name"><a data-action="edit-item">{{item.name}}</a></div>
-              <div class="item-prop">{{item.system.quantity}}</div>
-              <div class="item-prop detail">
-                {{#if (eq ../section.type "equipment")}}
-                  {{#if item.system.slot}}
-                    {{item.system.slot}}
+            {{#each section.items as |item|}}
+              <li class="item flexrow" data-item-id="{{item.id}}">
+                <div class="item-name"><a data-action="edit-item">{{item.name}}</a></div>
+                <div class="item-prop">{{item.system.value}}</div>
+                <div class="item-prop notes">
+                  {{#if item.system.effect}}
+                    {{item.system.effect}}
                   {{else}}
                     —
                   {{/if}}
-                {{else}}
-                  {{#if (eq ../section.type "consumable")}}
-                    {{#if item.system.uses}}
-                      {{item.system.uses.value}}/{{item.system.uses.max}}
-                    {{else}}
-                      —
-                    {{/if}}
-                  {{else}}
+                </div>
+                <div class="item-controls">
+                  <a data-action="edit-item" title="Editar"><i class="fas fa-edit"></i></a>
+                  <a data-action="delete-item" title="Eliminar"><i class="fas fa-trash"></i></a>
+                </div>
+              </li>
+            {{/each}}
+          </ol>
+        {{else}}
+          {{#if (eq section.type "consumable")}}
+            <ol class="item-list">
+              <li class="item item-header flexrow">
+                <div class="item-name">Nombre</div>
+                <div class="item-prop">Cant.</div>
+                <div class="item-prop">Valor</div>
+                <div class="item-prop notes">Efecto</div>
+                <div class="item-controls"></div>
+              </li>
+
+              {{#each section.items as |item|}}
+                <li class="item flexrow" data-item-id="{{item.id}}">
+                  <div class="item-name">
+                    <button type="button" class="as-link" data-action="use-consumable">{{item.name}}</button>
+                  </div>
+                  <div class="item-prop">{{item.system.quantity}}</div>
+                  <div class="item-prop">{{item.system.value}}</div>
+                  <div class="item-prop notes">
                     {{#if item.system.effect}}
                       {{item.system.effect}}
                     {{else}}
                       —
                     {{/if}}
-                  {{/if}}
-                {{/if}}
-              </div>
-              <div class="item-prop notes">
-                {{#if item.system.notes}}
-                  {{item.system.notes}}
-                {{else}}
-                  —
-                {{/if}}
-              </div>
-              <div class="item-controls">
-                <a data-action="edit-item" title="Editar"><i class="fas fa-edit"></i></a>
-                <a data-action="delete-item" title="Eliminar"><i class="fas fa-trash"></i></a>
-              </div>
-            </li>
-
-            {{#if (or item.system.description item.system.effect)}}
-              <li class="item item-summary">
-                {{#if item.system.description}}
-                  <div class="item-effect">{{item.system.description}}</div>
-                {{/if}}
-                {{#if item.system.effect}}
-                  <div class="item-effect"><strong>Efecto:</strong> {{item.system.effect}}</div>
-                {{/if}}
+                  </div>
+                  <div class="item-controls">
+                    <a data-action="edit-item" title="Editar"><i class="fas fa-edit"></i></a>
+                    <a data-action="delete-item" title="Eliminar"><i class="fas fa-trash"></i></a>
+                  </div>
+                </li>
+              {{/each}}
+            </ol>
+          {{else}}
+            <ol class="item-list">
+              <li class="item item-header flexrow">
+                <div class="item-name">Nombre</div>
+                <div class="item-prop">Cant.</div>
+                <div class="item-prop">Valor</div>
+                <div class="item-controls"></div>
               </li>
-            {{/if}}
-          {{/each}}
-        </ol>
+
+              {{#each section.items as |item|}}
+                <li class="item flexrow" data-item-id="{{item.id}}">
+                  <div class="item-name">
+                    <button type="button" class="as-link" data-action="use-gear">{{item.name}}</button>
+                  </div>
+                  <div class="item-prop">{{item.system.quantity}}</div>
+                  <div class="item-prop">{{item.system.value}}</div>
+                  <div class="item-controls">
+                    <a data-action="edit-item" title="Editar"><i class="fas fa-edit"></i></a>
+                    <a data-action="delete-item" title="Eliminar"><i class="fas fa-trash"></i></a>
+                  </div>
+                </li>
+
+                {{#if item.system.description}}
+                  <li class="item item-summary">
+                    <div class="item-effect"><strong>Descripción:</strong> {{item.system.description}}</div>
+                  </li>
+                {{/if}}
+              {{/each}}
+            </ol>
+          {{/if}}
+        {{/if}}
       {{else}}
         <p class="notes">{{section.emptyHint}}</p>
       {{/if}}

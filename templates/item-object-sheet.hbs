@@ -14,53 +14,42 @@
   <section class="sheet-body">
     <div class="tab" data-tab="details" data-group="primary">
       <div class="grid two-col">
-        <div class="field">
-          <label>Cantidad</label>
-          <input type="number" name="system.quantity" value="{{system.quantity}}" data-dtype="Number" min="0"/>
-        </div>
-        <div class="field">
-          <label>Valor</label>
-          <input type="number" name="system.value" value="{{system.value}}" data-dtype="Number" min="0" step="1"/>
-        </div>
-
-        <div class="field">
-          <label>Peso</label>
-          <input type="number" name="system.weight" value="{{system.weight}}" data-dtype="Number" min="0" step="0.1"/>
-        </div>
-        <div class="field">
-          <label>Notas breves</label>
-          <input type="text" name="system.notes" value="{{system.notes}}"/>
-        </div>
-
-        {{#if isEquipment}}
-          <div class="field full-width">
-            <label>Slot / Ubicación</label>
-            <input type="text" name="system.slot" value="{{system.slot}}"/>
+        {{#if (or isConsumable isGear)}}
+          <div class="field">
+            <label>Cantidad</label>
+            <input type="number" name="system.quantity" value="{{system.quantity}}" data-dtype="Number" min="0"/>
           </div>
         {{/if}}
 
-        {{#if isConsumable}}
+        {{#if (or isConsumable isGear isEquipment)}}
           <div class="field">
-            <label>Usos actuales</label>
-            <input type="number" name="system.uses.value" value="{{system.uses.value}}" data-dtype="Number" min="0"/>
+            <label>Valor</label>
+            <input type="number" name="system.value" value="{{system.value}}" data-dtype="Number" min="0" step="1"/>
           </div>
-          <div class="field">
-            <label>Usos máximos</label>
-            <input type="number" name="system.uses.max" value="{{system.uses.max}}" data-dtype="Number" min="0"/>
+        {{/if}}
+
+        {{#if isTrait}}
+          <div class="field full-width">
+            <p class="notes">Los rasgos solo requieren un nombre y su efecto.</p>
           </div>
         {{/if}}
       </div>
     </div>
 
     <div class="tab" data-tab="description" data-group="primary">
-      <div class="field">
-        <label>Descripción</label>
-        <textarea name="system.description" rows="5">{{system.description}}</textarea>
-      </div>
-      <div class="field">
-        <label>Efecto</label>
-        <textarea name="system.effect" rows="4">{{system.effect}}</textarea>
-      </div>
+      {{#if isGear}}
+        <div class="field">
+          <label>Descripción</label>
+          <textarea name="system.description" rows="5">{{system.description}}</textarea>
+        </div>
+      {{/if}}
+
+      {{#if (or isConsumable isEquipment isTrait)}}
+        <div class="field">
+          <label>Efecto</label>
+          <textarea name="system.effect" rows="5">{{system.effect}}</textarea>
+        </div>
+      {{/if}}
     </div>
   </section>
 </form>
