@@ -5,7 +5,7 @@ export class MyActorSheet extends ActorSheet {
     return foundry.utils.mergeObject(super.defaultOptions, {
       classes: ["PMD-Explorers-of-Fate", "sheet", "actor"],
       template: "systems/PMD-Explorers-of-Fate/templates/actor-sheet.hbs",
-      width: 500,
+      width: 700,
       height: 600,
       tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "stats" }],
       submitOnChange: true,
@@ -359,3 +359,4 @@ export class MyActorSheet extends ActorSheet {
     await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor: this.actor }), flavor });
   }
 }
+
