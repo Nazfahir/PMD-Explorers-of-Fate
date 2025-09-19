@@ -17,8 +17,6 @@ export class MyActorSheet extends ActorSheet {
   getData(options) {
     const data = super.getData(options);
     data.system = this.actor.system;
-    data.effects = Array.from(this.actor.effects ?? []);
-    data.isEditable = this.isEditable;
 
     data.skillList = [
       { key: "athletics",   label: "Athletics" },

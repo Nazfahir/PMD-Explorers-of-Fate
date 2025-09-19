@@ -9,7 +9,6 @@
   <nav class="sheet-tabs tabs" data-group="primary">
     <a class="item" data-tab="details">Detalles</a>
     <a class="item" data-tab="description">Descripción</a>
-    <a class="item" data-tab="effects">Efectos</a>
   </nav>
 
   <section class="sheet-body">
@@ -51,10 +50,6 @@
           <textarea name="system.effect" rows="5">{{system.effect}}</textarea>
         </div>
       {{/if}}
-    </div>
-
-    <div class="tab" data-tab="effects" data-group="primary">
-      {{> "systems/PMD-Explorers-of-Fate/templates/parts/active-effects.hbs" effects=effects document=item isEditable=isEditable}}
     </div>
   </section>
 </form>
