@@ -16,21 +16,34 @@ Hooks.once("init", function () {
     decimals: 0
   };
 
+  const actorCollection = foundry?.documents?.collections?.Actors ?? globalThis.Actors;
+  const coreActorSheet =
+    foundry?.appv1?.sheets?.ActorSheet ??
+    foundry?.applications?.sheets?.ActorSheet ??
+    globalThis.ActorSheet;
+
   // Registrar hoja por defecto para nuestro tipo
-  Actors.unregisterSheet("core", ActorSheet);
-  Actors.registerSheet("PMD-Explorers-of-Fate", MyActorSheet, {
-    types: ["creature"],
-    makeDefault: true,
-    label: "Hoja de Criatura (Básica)"
-  });
+  if (actorCollection?.unregisterSheet && coreActorSheet) {
+    actorCollection.unregisterSheet("core", coreActorSheet);
+  }
+  if (actorCollection?.registerSheet) {
+    actorCollection.registerSheet("PMD-Explorers-of-Fate", MyActorSheet, {
+      types: ["creature"],
+      makeDefault: true,
+      label: "Hoja de Criatura (Básica)"
+    });
+  }
 
   // Items (movimientos y objetos)
   CONFIG.Item.documentClass = PMDItem;
-  Items.registerSheet("PMD-Explorers-of-Fate", PMDItemSheet, {
-    types: ["move", "equipment", "consumable", "gear", "trait"],
-    makeDefault: true,
-    label: "Objeto PMD"
-  });
+  const itemCollection = foundry?.documents?.collections?.Items ?? globalThis.Items;
+  if (itemCollection?.registerSheet) {
+    itemCollection.registerSheet("PMD-Explorers-of-Fate", PMDItemSheet, {
+      types: ["move", "equipment", "consumable", "gear", "trait"],
+      makeDefault: true,
+      label: "Objeto PMD"
+    });
+  }
 });
 
 Hooks.once("ready", function () {

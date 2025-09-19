@@ -1,5 +1,8 @@
 // module/actor-sheet.js
-const BaseActorSheet = foundry?.applications?.sheets?.ActorSheet ?? ActorSheet;
+const BaseActorSheet =
+  foundry?.appv1?.sheets?.ActorSheet ??
+  foundry?.applications?.sheets?.ActorSheet ??
+  globalThis.ActorSheet;
 
 function cloneDefaults(defaults) {
   if (!defaults) return {};

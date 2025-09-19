@@ -1,5 +1,8 @@
 // module/item-sheet.js
-const BaseItemSheet = foundry?.applications?.sheets?.ItemSheet ?? ItemSheet;
+const BaseItemSheet =
+  foundry?.appv1?.sheets?.ItemSheet ??
+  foundry?.applications?.sheets?.ItemSheet ??
+  globalThis.ItemSheet;
 
 function cloneDefaults(defaults) {
   if (!defaults) return {};
