@@ -41,7 +41,17 @@
     }
   },
   "Item": {
-    "types": ["move"],
+    "types": ["move", "equipment", "consumable", "gear"],
+    "templates": {
+      "baseObject": {
+        "quantity": 1,
+        "weight": 0,
+        "value": 0,
+        "description": "",
+        "effect": "",
+        "notes": ""
+      }
+    },
     "move": {
       "range": "",
       "pp": { "max": 10, "value": 10 },
@@ -50,6 +60,17 @@
       "effect": "",
       "element": "",
       "baseDamage": 10
+    },
+    "equipment": {
+      "templates": ["baseObject"],
+      "slot": ""
+    },
+    "consumable": {
+      "templates": ["baseObject"],
+      "uses": { "max": 1, "value": 1 }
+    },
+    "gear": {
+      "templates": ["baseObject"]
     }
   }
 }

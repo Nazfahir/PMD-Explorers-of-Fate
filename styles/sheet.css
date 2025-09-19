@@ -1,5 +1,7 @@
 /* === Estilos base para la hoja de actor === */
-.PMD-Explorers-of-Fate.sheet.actor .my-sheet {
+.PMD-Explorers-of-Fate.sheet.actor .my-sheet,
+.PMD-Explorers-of-Fate.sheet.item .my-move-sheet,
+.PMD-Explorers-of-Fate.sheet.item .my-item-sheet {
   padding: 0.5rem;
 }
 
@@ -7,13 +9,15 @@
   flex: 1;
 }
 
-.my-sheet .grid.two-col {
+.my-sheet .grid.two-col,
+.PMD-Explorers-of-Fate.sheet.item .grid.two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px 12px;
 }
 
-.my-sheet .grid.two-col .stat.full-width {
+.my-sheet .grid.two-col .stat.full-width,
+.PMD-Explorers-of-Fate.sheet.item .grid.two-col .field.full-width {
   grid-column: 1 / -1;
 }
 
@@ -32,7 +36,8 @@
   gap: 6px 12px;
 }
 
-.my-sheet label {
+.my-sheet label,
+.PMD-Explorers-of-Fate.sheet.item label {
   font-weight: bold;
   font-size: 12px;
   color: var(--color-text-dark-6);
@@ -41,7 +46,11 @@
 .my-sheet input[type="number"],
 .my-sheet input[type="text"],
 .my-sheet textarea,
-.my-sheet select {
+.my-sheet select,
+.PMD-Explorers-of-Fate.sheet.item input[type="number"],
+.PMD-Explorers-of-Fate.sheet.item input[type="text"],
+.PMD-Explorers-of-Fate.sheet.item textarea,
+.PMD-Explorers-of-Fate.sheet.item select {
   width: 100%;
   box-sizing: border-box;
 }
@@ -99,6 +108,16 @@
 .PMD-Explorers-of-Fate.sheet.actor .item-list .item .item-prop {
   flex: 0 0 70px;
   text-align: center;
+}
+
+.PMD-Explorers-of-Fate.sheet.actor .item-list .item .item-prop.detail,
+.PMD-Explorers-of-Fate.sheet.actor .item-list .item .item-prop.notes {
+  flex: 1;
+  text-align: left;
+}
+
+.PMD-Explorers-of-Fate.sheet.actor .item-list .item .item-prop.notes {
+  padding-left: 6px;
 }
 
 .PMD-Explorers-of-Fate.sheet.actor .item-list .item .item-controls a {
