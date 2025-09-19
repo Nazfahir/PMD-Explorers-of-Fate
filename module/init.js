@@ -21,7 +21,7 @@ Hooks.once("init", function () {
   // Items (movimientos y objetos)
   CONFIG.Item.documentClass = PMDItem;
   Items.registerSheet("PMD-Explorers-of-Fate", PMDItemSheet, {
-    types: ["move", "equipment", "consumable", "gear"],
+    types: ["move", "equipment", "consumable", "gear", "trait"],
     makeDefault: true,
     label: "Objeto PMD"
   });

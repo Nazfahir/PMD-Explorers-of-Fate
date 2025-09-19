@@ -41,7 +41,7 @@
     }
   },
   "Item": {
-    "types": ["move", "equipment", "consumable", "gear"],
+    "types": ["move", "equipment", "consumable", "gear", "trait"],
     "templates": {
       "baseObject": {
         "quantity": 1,
@@ -71,6 +71,9 @@
     },
     "gear": {
       "templates": ["baseObject"]
+    },
+    "trait": {
+      "effect": ""
     }
   }
 }

@@ -58,6 +58,12 @@ export class PMDItem extends Item {
         }
         break;
       }
+
+      case "trait": {
+        const str = (v) => String(v ?? "");
+        sys.effect = str(sys.effect);
+        break;
+      }
     }
   }
 }
