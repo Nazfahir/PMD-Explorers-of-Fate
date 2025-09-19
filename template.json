@@ -14,7 +14,7 @@
         "stab": 0,
         "basicattack": 0,
         "lp": 0,
-        "belly": 0,
+        "belly": 100,
         "pasiva": "",
         "destino": "",
         "leyenda": "",
@@ -40,6 +40,7 @@
       "templates": ["baseCreature"]
     }
   },
+
   "Item": {
     "types": ["move", "equipment", "consumable", "gear", "trait"],
     "templates": {
