@@ -1,8 +1,8 @@
 // module/init.js
 import { MyActor } from "./actor.js";
 import { MyActorSheet } from "./actor-sheet.js";
-import { MoveItem } from "./item.js";
-import { MoveItemSheet } from "./item-sheet.js";
+import { PMDItem } from "./item.js";
+import { PMDItemSheet } from "./item-sheet.js";
 
 Hooks.once("init", function () {
   console.log("PMD-Explorers-of-Fate | Inicializando sistema básico");
@@ -18,12 +18,12 @@ Hooks.once("init", function () {
     label: "Hoja de Criatura (Básica)"
   });
 
-  // Item (movimientos)
-  CONFIG.Item.documentClass = MoveItem;
-  Items.registerSheet("PMD-Explorers-of-Fate", MoveItemSheet, {
-    types: ["move"],
+  // Items (movimientos y objetos)
+  CONFIG.Item.documentClass = PMDItem;
+  Items.registerSheet("PMD-Explorers-of-Fate", PMDItemSheet, {
+    types: ["move", "equipment", "consumable", "gear"],
     makeDefault: true,
-    label: "Movimiento"
+    label: "Objeto PMD"
   });
 });
 

@@ -49,6 +49,7 @@
     <a class="item" data-tab="stats">Atributos</a>
     <a class="item" data-tab="skills">Habilidades</a>
     <a class="item" data-tab="moves">Movimientos</a>
+    <a class="item" data-tab="inventory">Objetos</a>
   </nav>
 
   <section class="sheet-body">
@@ -208,6 +209,94 @@
   {{else}}
     <p class="notes">Arrastra Items tipo <b>Movimiento</b> o usa “+ Nuevo movimiento”.</p>
   {{/if}}
+</div>
+
+<!-- ===== TAB: Objetos ===== -->
+<div class="tab" data-tab="inventory" data-group="primary">
+  {{#each inventorySections as |section|}}
+    <div class="inventory-section">
+      <div class="flexrow" style="justify-content: space-between; align-items: center; margin: 12px 0 6px;">
+        <h3 style="margin:0;">{{section.label}}</h3>
+        <button type="button" data-action="create-item" data-type="{{section.type}}">{{section.createLabel}}</button>
+      </div>
+
+      {{#if section.items.length}}
+        <ol class="item-list">
+          <li class="item item-header flexrow">
+            <div class="item-name">Nombre</div>
+            <div class="item-prop">Cant.</div>
+            <div class="item-prop detail">
+              {{#if (eq section.type "equipment")}}
+                Slot
+              {{else}}
+                {{#if (eq section.type "consumable")}}
+                  Usos
+                {{else}}
+                  Detalle
+                {{/if}}
+              {{/if}}
+            </div>
+            <div class="item-prop notes">Notas</div>
+            <div class="item-controls"></div>
+          </li>
+
+          {{#each section.items as |item|}}
+            <li class="item flexrow" data-item-id="{{item.id}}">
+              <div class="item-name"><a data-action="edit-item">{{item.name}}</a></div>
+              <div class="item-prop">{{item.system.quantity}}</div>
+              <div class="item-prop detail">
+                {{#if (eq ../section.type "equipment")}}
+                  {{#if item.system.slot}}
+                    {{item.system.slot}}
+                  {{else}}
+                    —
+                  {{/if}}
+                {{else}}
+                  {{#if (eq ../section.type "consumable")}}
+                    {{#if item.system.uses}}
+                      {{item.system.uses.value}}/{{item.system.uses.max}}
+                    {{else}}
+                      —
+                    {{/if}}
+                  {{else}}
+                    {{#if item.system.effect}}
+                      {{item.system.effect}}
+                    {{else}}
+                      —
+                    {{/if}}
+                  {{/if}}
+                {{/if}}
+              </div>
+              <div class="item-prop notes">
+                {{#if item.system.notes}}
+                  {{item.system.notes}}
+                {{else}}
+                  —
+                {{/if}}
+              </div>
+              <div class="item-controls">
+                <a data-action="edit-item" title="Editar"><i class="fas fa-edit"></i></a>
+                <a data-action="delete-item" title="Eliminar"><i class="fas fa-trash"></i></a>
+              </div>
+            </li>
+
+            {{#if (or item.system.description item.system.effect)}}
+              <li class="item item-summary">
+                {{#if item.system.description}}
+                  <div class="item-effect">{{item.system.description}}</div>
+                {{/if}}
+                {{#if item.system.effect}}
+                  <div class="item-effect"><strong>Efecto:</strong> {{item.system.effect}}</div>
+                {{/if}}
+              </li>
+            {{/if}}
+          {{/each}}
+        </ol>
+      {{else}}
+        <p class="notes">{{section.emptyHint}}</p>
+      {{/if}}
+    </div>
+  {{/each}}
 </div>
   </section>
 </form>

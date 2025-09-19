@@ -39,6 +39,34 @@ export class MyActorSheet extends ActorSheet {
       .filter(i => i.type === "move")
       .sort((a, b) => a.name.localeCompare(b.name));
 
+    const typeList = (type) => this.actor.items
+      .filter((i) => i.type === type)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    data.inventorySections = [
+      {
+        type: "equipment",
+        label: "Equipamiento",
+        createLabel: "+ Nuevo equipamiento",
+        emptyHint: "Arrastra Items tipo <b>Equipamiento</b> o usa “+ Nuevo equipamiento”.",
+        items: typeList("equipment"),
+      },
+      {
+        type: "consumable",
+        label: "Consumibles",
+        createLabel: "+ Nuevo consumible",
+        emptyHint: "Arrastra Items tipo <b>Consumible</b> o usa “+ Nuevo consumible”.",
+        items: typeList("consumable"),
+      },
+      {
+        type: "gear",
+        label: "Otros objetos",
+        createLabel: "+ Nuevo objeto",
+        emptyHint: "Arrastra Items tipo <b>Objeto</b> o usa “+ Nuevo objeto”.",
+        items: typeList("gear"),
+      },
+    ];
+
     return data;
   }
 
@@ -83,6 +111,37 @@ export class MyActorSheet extends ActorSheet {
       const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
       const item = this.actor.items.get(id);
       if (item) await this._useMove(item);
+    });
+
+    html.find("[data-action='create-item']").on("click", async (ev) => {
+      ev.preventDefault();
+      const type = ev.currentTarget.dataset.type;
+      if (!type) return;
+
+      const names = {
+        equipment: "Nuevo equipamiento",
+        consumable: "Nuevo consumible",
+        gear: "Nuevo objeto",
+      };
+
+      const created = await this.actor.createEmbeddedDocuments("Item", [{
+        name: names[type] ?? "Nuevo objeto",
+        type,
+        system: {},
+      }]);
+      created?.[0]?.sheet?.render(true);
+    });
+
+    html.find("[data-action='edit-item']").on("click", (ev) => {
+      ev.preventDefault();
+      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
+      this.actor.items.get(id)?.sheet?.render(true);
+    });
+
+    html.find("[data-action='delete-item']").on("click", async (ev) => {
+      ev.preventDefault();
+      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
+      if (id) await this.actor.deleteEmbeddedDocuments("Item", [id]);
     });
   }
 
