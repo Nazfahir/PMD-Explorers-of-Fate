@@ -7,6 +7,13 @@
     "minimum": "12",
     "verified": "13"
   },
+  "version": "0.2.0",
+  "manifest": "https://raw.githubusercontent.com/Nazfahir/PMD-Explorers-of-Fate/main/system.json",
+  "download": "https://github.com/Nazfahir/PMD-Explorers-of-Fate/archive/refs/tags/0.2.0.zip",
+  "compatibility": {
+    "minimum": "12",
+    "verified": "13"
+  },
   "authors": [{ "name": "BaronVonBairon" }],
   "esmodules": ["module/init.js"],
   "styles": ["styles/sheet.css"],
