@@ -51,7 +51,6 @@
     <a class="item" data-tab="moves">Movimientos</a>
     <a class="item" data-tab="traits">Rasgos</a>
     <a class="item" data-tab="inventory">Objetos</a>
-    <a class="item" data-tab="effects">Efectos</a>
   </nav>
 
   <section class="sheet-body">
@@ -250,13 +249,8 @@
       {{/if}}
     </div>
 
-    <!-- ===== TAB: Efectos ===== -->
-    <div class="tab" data-tab="effects" data-group="primary">
-      {{> "systems/PMD-Explorers-of-Fate/templates/parts/active-effects.hbs" effects=effects document=actor isEditable=isEditable}}
-    </div>
-
-    <!-- ===== TAB: Objetos ===== -->
-    <div class="tab" data-tab="inventory" data-group="primary">
+<!-- ===== TAB: Objetos ===== -->
+<div class="tab" data-tab="inventory" data-group="primary">
   {{#each inventorySections as |section|}}
     <div class="inventory-section">
       <div class="flexrow" style="justify-content: space-between; align-items: center; margin: 12px 0 6px;">
@@ -360,6 +354,6 @@
       {{/if}}
     </div>
   {{/each}}
-    </div>
+</div>
   </section>
 </form>
