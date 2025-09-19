@@ -9,36 +9,6 @@
   flex: 1;
 }
 
-.my-sheet .sheet-header,
-.PMD-Explorers-of-Fate.sheet.item .sheet-header {
-  align-items: flex-start;
-}
-
-.my-sheet .sheet-header .header-controls,
-.PMD-Explorers-of-Fate.sheet.item .sheet-header .header-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  margin-left: 12px;
-}
-
-.PMD-Explorers-of-Fate .effects-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.2));
-  border-radius: 4px;
-  background: var(--color-bg-option, rgba(0, 0, 0, 0.05));
-  color: inherit;
-  cursor: pointer;
-}
-
-.PMD-Explorers-of-Fate .effects-control:hover {
-  background: var(--color-bg-btn-hover, rgba(0, 0, 0, 0.1));
-}
-
 .my-sheet .grid.two-col,
 .PMD-Explorers-of-Fate.sheet.item .grid.two-col {
   display: grid;
