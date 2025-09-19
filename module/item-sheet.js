@@ -28,6 +28,8 @@ export class PMDItemSheet extends ItemSheet {
     data.isGear = this.item.type === "gear";
     data.isTrait = this.item.type === "trait";
     data.itemType = this.item.type;
+    data.effects = Array.from(this.item.effects ?? []);
+    data.isEditable = this.isEditable;
     return data;
   }
 }
