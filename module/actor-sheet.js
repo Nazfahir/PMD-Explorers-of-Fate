@@ -1,21 +1,91 @@
 // module/actor-sheet.js
-export class MyActorSheet extends ActorSheet {
-  /** @override */
+const BaseActorSheet = foundry?.applications?.sheets?.ActorSheet ?? ActorSheet;
+
+function cloneDefaults(defaults) {
+  if (!defaults) return {};
+  if (foundry?.utils?.deepClone) return foundry.utils.deepClone(defaults);
+  if (typeof structuredClone === "function") return structuredClone(defaults);
+  try {
+    return JSON.parse(JSON.stringify(defaults));
+  } catch (err) {
+    if (foundry?.utils?.mergeObject) return foundry.utils.mergeObject({}, defaults);
+    return { ...defaults };
+  }
+}
+
+function createActorSheetOptions() {
+  return {
+    classes: ["PMD-Explorers-of-Fate", "sheet", "actor"],
+    template: "systems/PMD-Explorers-of-Fate/templates/actor-sheet.hbs",
+    width: 700,
+    height: 600,
+    tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "stats" }],
+    submitOnChange: true,
+    closeOnSubmit: false
+  };
+}
+
+function resolveHTMLElement(html) {
+  if (!html) return null;
+  const element = html?.element ?? html;
+  if (element instanceof HTMLElement || element instanceof DocumentFragment) return element;
+  if (typeof element === "object" && element !== null && 0 in element) {
+    const candidate = element[0];
+    if (candidate instanceof HTMLElement || candidate instanceof DocumentFragment) return candidate;
+  }
+  return null;
+}
+
+function onceResolver(resolve) {
+  let done = false;
+  return (value) => {
+    if (done) return;
+    done = true;
+    resolve(value);
+  };
+}
+
+export class MyActorSheet extends BaseActorSheet {
+  static DEFAULT_OPTIONS = foundry.utils.mergeObject(
+    cloneDefaults(super.DEFAULT_OPTIONS ?? super.defaultOptions),
+    createActorSheetOptions()
+  );
+
   static get defaultOptions() {
-    return foundry.utils.mergeObject(super.defaultOptions, {
-      classes: ["PMD-Explorers-of-Fate", "sheet", "actor"],
-      template: "systems/PMD-Explorers-of-Fate/templates/actor-sheet.hbs",
-      width: 700,
-      height: 600,
-      tabs: [{ navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "stats" }],
-      submitOnChange: true,
-      closeOnSubmit: false
-    });
+    if (super.defaultOptions) {
+      return foundry.utils.mergeObject(cloneDefaults(super.defaultOptions), createActorSheetOptions());
+    }
+    return this.DEFAULT_OPTIONS;
   }
 
-  /** @override */
-  getData(options) {
-    const data = super.getData(options);
+  async _prepareContext(options) {
+    const context = await this._getBaseContext(options, true);
+    return this._augmentContext(context);
+  }
+
+  async getData(options = {}) {
+    const context = await this._getBaseContext(options, false);
+    return this._augmentContext(context);
+  }
+
+  async _getBaseContext(options, preferV2) {
+    if (preferV2 && typeof super._prepareContext === "function") {
+      return await super._prepareContext(options);
+    }
+    if (!preferV2 && typeof super.getData === "function") {
+      return await super.getData(options);
+    }
+    if (typeof super._prepareContext === "function") {
+      return await super._prepareContext(options);
+    }
+    if (typeof super.getData === "function") {
+      return await super.getData(options);
+    }
+    return {};
+  }
+
+  _augmentContext(context) {
+    const data = context ?? {};
     data.system = this.actor.system;
 
     data.skillList = [
@@ -74,23 +144,36 @@ export class MyActorSheet extends ActorSheet {
 
   /** @override */
   activateListeners(html) {
-    super.activateListeners(html);
-    if (!this.isEditable) return;
+    if (typeof super.activateListeners === "function") {
+      super.activateListeners(html);
+    }
+
+    const root = resolveHTMLElement(html);
+    if (!root || !this.isEditable) return;
+
+    const addClick = (selector, handler) => {
+      root.querySelectorAll(selector).forEach((element) => {
+        element.addEventListener("click", async (event) => {
+          event.preventDefault();
+          await handler(event, element);
+        });
+      });
+    };
 
     // Habilidades
-    html.find("[data-action='roll-skill']").on("click", (ev) => {
-      ev.preventDefault();
-      const el = ev.currentTarget;
-      this._rollSkill(el.dataset.skill, el.dataset.label ?? el.dataset.skill);
+    addClick("[data-action='roll-skill']", (event, element) => {
+      const skill = element.dataset.skill;
+      if (!skill) return;
+      const label = element.dataset.label ?? skill;
+      this._rollSkill(skill, label);
     });
 
-    html.find("[data-action='restore-actor']").on("click", async (ev) => {
-      ev.preventDefault();
+    addClick("[data-action='restore-actor']", async () => {
       await this._restoreActorResources();
     });
 
     // Movimientos
-    html.find("[data-action='create-move']").on("click", async () => {
+    addClick("[data-action='create-move']", async () => {
       const created = await this.actor.createEmbeddedDocuments("Item", [{
         name: "Nuevo Movimiento",
         type: "move",
@@ -99,25 +182,24 @@ export class MyActorSheet extends ActorSheet {
       created?.[0]?.sheet?.render(true);
     });
 
-    html.find("[data-action='edit-move']").on("click", (ev) => {
-      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
+    addClick("[data-action='edit-move']", (event, element) => {
+      const id = element.closest("[data-item-id]")?.dataset.itemId;
       this.actor.items.get(id)?.sheet?.render(true);
     });
 
-    html.find("[data-action='delete-move']").on("click", async (ev) => {
-      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
+    addClick("[data-action='delete-move']", async (event, element) => {
+      const id = element.closest("[data-item-id]")?.dataset.itemId;
       if (id) await this.actor.deleteEmbeddedDocuments("Item", [id]);
     });
 
-    html.find("[data-action='use-move']").on("click", async (ev) => {
-      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
-      const item = this.actor.items.get(id);
+    addClick("[data-action='use-move']", async (event, element) => {
+      const id = element.closest("[data-item-id]")?.dataset.itemId;
+      const item = id ? this.actor.items.get(id) : null;
       if (item) await this._useMove(item);
     });
 
-    html.find("[data-action='create-item']").on("click", async (ev) => {
-      ev.preventDefault();
-      const type = ev.currentTarget.dataset.type;
+    addClick("[data-action='create-item']", async (event, element) => {
+      const type = element.dataset.type;
       if (!type) return;
 
       const names = {
@@ -135,28 +217,24 @@ export class MyActorSheet extends ActorSheet {
       created?.[0]?.sheet?.render(true);
     });
 
-    html.find("[data-action='edit-item']").on("click", (ev) => {
-      ev.preventDefault();
-      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
+    addClick("[data-action='edit-item']", (event, element) => {
+      const id = element.closest("[data-item-id]")?.dataset.itemId;
       this.actor.items.get(id)?.sheet?.render(true);
     });
 
-    html.find("[data-action='delete-item']").on("click", async (ev) => {
-      ev.preventDefault();
-      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
+    addClick("[data-action='delete-item']", async (event, element) => {
+      const id = element.closest("[data-item-id]")?.dataset.itemId;
       if (id) await this.actor.deleteEmbeddedDocuments("Item", [id]);
     });
 
-    html.find("[data-action='use-consumable']").on("click", async (ev) => {
-      ev.preventDefault();
-      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
+    addClick("[data-action='use-consumable']", async (event, element) => {
+      const id = element.closest("[data-item-id]")?.dataset.itemId;
       const item = id ? this.actor.items.get(id) : null;
       if (item) await this._consumeItem(item);
     });
 
-    html.find("[data-action='use-gear']").on("click", async (ev) => {
-      ev.preventDefault();
-      const id = ev.currentTarget.closest("[data-item-id]")?.dataset.itemId;
+    addClick("[data-action='use-gear']", async (event, element) => {
+      const id = element.closest("[data-item-id]")?.dataset.itemId;
       const item = id ? this.actor.items.get(id) : null;
       if (item) await this._useGearItem(item);
     });
@@ -198,15 +276,16 @@ export class MyActorSheet extends ActorSheet {
   /* -------------------- Tiradas de HABILIDAD -------------------- */
   async _askRollMode() {
     return await new Promise((resolve) => {
+      const safeResolve = onceResolver(resolve);
       new Dialog({
         title: "Tipo de tirada",
         content: "<p>Selecciona el tipo de tirada:</p>",
         buttons: {
-          normal:   { label: "Normal",  callback: () => resolve("normal") },
-          critical: { label: "Crítica", callback: () => resolve("critical") }
+          normal:   { label: "Normal",  callback: () => safeResolve("normal") },
+          critical: { label: "Crítica", callback: () => safeResolve("critical") }
         },
         default: "normal",
-        close: () => resolve(null)
+        close: () => safeResolve(null)
       }).render(true);
     });
   }
@@ -238,7 +317,7 @@ export class MyActorSheet extends ActorSheet {
   /* -------------------- Helpers de Input -------------------- */
   async _promptAttackBonus(moveName = "Ataque") {
     return await new Promise((resolve) => {
-      let bonus = 0;
+      const safeResolve = onceResolver(resolve);
       const content = `
         <div class="form-group">
           <label>Bonificador ocasional para <b>${foundry.utils.escapeHTML(moveName)}</b>:</label>
@@ -253,21 +332,23 @@ export class MyActorSheet extends ActorSheet {
           ok: {
             label: "Lanzar",
             callback: (html) => {
-              const n = Number(html.find('input[name="bonus"]').val());
-              if (Number.isFinite(n)) bonus = n;
-              resolve(bonus);
+              const element = resolveHTMLElement(html);
+              const input = element?.querySelector('input[name="bonus"]');
+              const value = Number(input?.value);
+              safeResolve(Number.isFinite(value) ? value : 0);
             }
           },
-          cancel: { label: "Cancelar", callback: () => resolve(null) }
+          cancel: { label: "Cancelar", callback: () => safeResolve(null) }
         },
         default: "ok",
-        close: () => resolve(null)
+        close: () => safeResolve(null)
       }).render(true);
     });
   }
 
   async _promptDamageOptions({ itemName, isCrit }) {
     return await new Promise((resolve) => {
+      const safeResolve = onceResolver(resolve);
       const content = `
         <div>
           <label><input type="checkbox" name="stab"/> Aplicar STAB</label>
@@ -301,11 +382,26 @@ export class MyActorSheet extends ActorSheet {
           ok: {
             label: "Calcular",
             callback: (html) => {
-              const parse = (n) => Number(html.find(`input[name='${n}-val']`).val()) || 0;
-              const getOp = (n) => html.find(`select[name='${n}-op']`).val();
-              resolve({
-                stab: html.find("input[name='stab']")[0].checked,
-                effectiveness: Number(html.find("select[name='eff']").val()),
+              const element = resolveHTMLElement(html);
+              if (!element) {
+                safeResolve(null);
+                return;
+              }
+              const parse = (name) => {
+                const input = element.querySelector(`input[name='${name}-val']`);
+                const number = Number(input?.value);
+                return Number.isFinite(number) ? number : 0;
+              };
+              const getOp = (name) => {
+                const select = element.querySelector(`select[name='${name}-op']`);
+                return select?.value ?? "+";
+              };
+              const effSelect = element.querySelector("select[name='eff']");
+              const effValue = Number(effSelect?.value);
+              const stabCheckbox = element.querySelector("input[name='stab']");
+              safeResolve({
+                stab: !!stabCheckbox?.checked,
+                effectiveness: Number.isFinite(effValue) ? effValue : 1,
                 stat: { op: getOp("stat"), val: parse("stat") },
                 ability: { op: getOp("ability"), val: parse("ability") },
                 weather: { op: getOp("weather"), val: parse("weather") },
@@ -314,9 +410,10 @@ export class MyActorSheet extends ActorSheet {
               });
             }
           },
-          cancel: { label: "Cancelar", callback: () => resolve(null) }
+          cancel: { label: "Cancelar", callback: () => safeResolve(null) }
         },
-        default: "ok"
+        default: "ok",
+        close: () => safeResolve(null)
       }).render(true);
     });
   }
