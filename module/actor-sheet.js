@@ -75,6 +75,18 @@ export class MyActorSheet extends ActorSheet {
   /** @override */
   activateListeners(html) {
     super.activateListeners(html);
+
+    html.find("[data-action='manage-effects']").on("click", (ev) => {
+      ev.preventDefault();
+      if (!this.isEditable) return;
+      const Config = globalThis?.ActiveEffectsConfig ?? null;
+      if (Config) {
+        new Config(this.actor).render(true);
+      } else {
+        ui.notifications?.error("No se pudo abrir la configuración de efectos activos.");
+      }
+    });
+
     if (!this.isEditable) return;
 
     // Habilidades
