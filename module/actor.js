@@ -34,6 +34,14 @@ export class MyActor extends Actor {
     sys.hp.value = num(sys.hp.value, sys.hp.max);
     sys.hp.value = Math.clamp(sys.hp.value, 0, sys.hp.max);
 
+    const level = num(sys.lvl, 1);
+    sys.experience ??= { max: level * 100, value: 0 };
+    sys.experience.value = num(sys.experience.value, 0);
+    sys.experience.max = Math.max(0, level * 100);
+    sys.experience.value = Math.clamp(sys.experience.value, 0, sys.experience.max);
+
+    sys.lp = num(sys.lp, 0);
+
     // --- Habilidades: asegurar objeto y aplicar límites 15..95 ---
     const SK = [
       "athletics","craft","endurance","finesse","medicine",
