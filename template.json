@@ -5,6 +5,7 @@
       "baseCreature": {
         "lvl": 1,
         "hp": { "max": 10, "value": 10 },
+        "experience": { "max": 100, "value": 0 },
         "attack": 0,
         "spAttack": 0,
         "defense": 0,
@@ -12,6 +13,7 @@
         "speed": 0,
         "stab": 0,
         "basicattack": 0,
+        "lp": 0,
         "belly": 0,
         "pasiva": "",
         "destino": "",

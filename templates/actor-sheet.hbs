@@ -64,6 +64,15 @@
           <input type="number" name="system.hp.max" value="{{system.hp.max}}" data-dtype="Number"/>
         </div>
 
+        <div class="stat">
+          <label>EXP Actual</label>
+          <input type="number" name="system.experience.value" value="{{system.experience.value}}" data-dtype="Number"/>
+        </div>
+        <div class="stat">
+          <label>EXP Máxima</label>
+          <input type="number" name="system.experience.max" value="{{system.experience.max}}" data-dtype="Number" readonly/>
+        </div>
+
         <div class="stat restore-resources full-width">
           <button type="button" data-action="restore-actor">Restaurar HP y PP</button>
         </div>
@@ -93,6 +102,11 @@
         <div class="stat">
           <label>Basic Attack</label>
           <input type="number" name="system.basicattack" value="{{system.basicattack}}" data-dtype="Number"/>
+        </div>
+
+        <div class="stat">
+          <label>LP</label>
+          <input type="number" name="system.lp" value="{{system.lp}}" data-dtype="Number"/>
         </div>
 
         <div class="stat">
