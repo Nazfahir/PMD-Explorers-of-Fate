@@ -1,0 +1,63 @@
+<section class="effects-panel">
+  <header class="effects-header flexrow" style="align-items: center; gap: 8px;">
+    <h3 style="margin: 0;">Efectos activos</h3>
+    {{#if isEditable}}
+      <button type="button" class="effect-control" data-action="create">
+        <i class="fas fa-plus"></i>
+        Nuevo efecto
+      </button>
+    {{/if}}
+  </header>
+
+  {{#if effects.length}}
+    <ol class="effects-list directory-list">
+      {{#each effects}}
+        <li class="effect flexcol {{#if this.disabled}}inactive{{/if}}" data-effect-id="{{this.id}}">
+          <div class="effect-header flexrow" style="justify-content: space-between; align-items: center; gap: 8px;">
+            <div class="effect-title flexrow" style="align-items: center; gap: 6px;">
+              {{#if this.icon}}
+                <img src="{{this.icon}}" alt="{{this.name}}" class="effect-icon" width="24" height="24"/>
+              {{/if}}
+              <span class="effect-name">{{this.name}}</span>
+            </div>
+            {{#if ../isEditable}}
+              <div class="effect-controls flexrow" style="gap: 6px;">
+                <a class="effect-control" data-action="toggle" title="{{#if this.disabled}}Activar{{else}}Desactivar{{/if}}">
+                  <i class="fas {{#if this.disabled}}fa-toggle-off{{else}}fa-toggle-on{{/if}}"></i>
+                </a>
+                <a class="effect-control" data-action="edit" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a class="effect-control" data-action="delete" title="Eliminar">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            {{/if}}
+          </div>
+
+          {{#if this.description}}
+            <p class="effect-description">{{{this.description}}}</p>
+          {{/if}}
+
+          {{#if this.changes}}
+            <ul class="effect-changes">
+              {{#each this.changes}}
+                <li>
+                  <span class="change-key">{{this.key}}</span>
+                  <span class="change-mode">{{this.mode}}</span>
+                  <span class="change-value">{{this.value}}</span>
+                </li>
+              {{/each}}
+            </ul>
+          {{/if}}
+
+          {{#if this.origin}}
+            <p class="effect-origin"><strong>Origen:</strong> {{this.origin}}</p>
+          {{/if}}
+        </li>
+      {{/each}}
+    </ol>
+  {{else}}
+    <p class="notes">No hay efectos activos.</p>
+  {{/if}}
+</section>
