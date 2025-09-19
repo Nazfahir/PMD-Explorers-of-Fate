@@ -7,13 +7,6 @@
     "minimum": "12",
     "verified": "13"
   },
-  "version": "0.3.0",
-  "manifest": "https://raw.githubusercontent.com/Nazfahir/PMD-Explorers-of-Fate/main/system.json",
-  "download": "https://github.com/Nazfahir/PMD-Explorers-of-Fate/archive/refs/tags/0.3.0.zip",
-  "compatibility": {
-    "minimum": "12",
-    "verified": "13"
-  },
   "authors": [{ "name": "BaronVonBairon" }],
   "esmodules": ["module/init.js"],
   "styles": ["styles/sheet.css"],
@@ -24,9 +17,32 @@
   "template": "template.json",
   "gridDistance": 1,
   "gridUnits": "espacio",
+  "primaryTokenAttribute": {
+    "attribute": "system.hp",
+    "value": "value",
+    "max": "max"
+  },
+  "secondaryTokenAttribute": {
+    "attribute": "system.experience",
+    "value": "value",
+    "max": "max"
+  },
+  "statusEffects": [
+    { "id": "asleep", "label": "Dormido", "icon": "icons/svg/sleep.svg" },
+    { "id": "burned", "label": "Quemado", "icon": "icons/svg/fire.svg" },
+    { "id": "frozen", "label": "Congelado", "icon": "icons/svg/ice-aura.svg" },
+    { "id": "paralyzed", "label": "Paralizado", "icon": "icons/svg/paralysis.svg" },
+    { "id": "poisoned", "label": "Envenenado", "icon": "icons/svg/poison.svg" },
+    { "id": "confused", "label": "Confundido", "icon": "icons/svg/daze.svg" },
+    { "id": "fainted", "label": "Debilitado", "icon": "icons/svg/skull.svg" }
+  ],
+  "specialStatusEffects": {
+    "DEFEATED": "fainted"
+  },
+  "manifest": "https://raw.githubusercontent.com/Nazfahir/PMD-Explorers-of-Fate/main/system.json",
+  "download": "https://github.com/Nazfahir/PMD-Explorers-of-Fate/archive/refs/tags/0.3.0.zip",
   "url": "https://github.com/Nazfahir/PMD-Explorers-of-Fate",
   "license": "LICENSE"
-
 }
 
 

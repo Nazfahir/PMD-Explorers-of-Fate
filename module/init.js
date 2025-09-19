@@ -7,6 +7,18 @@ import { PMDItemSheet } from "./item-sheet.js";
 Hooks.once("init", function () {
   console.log("PMD-Explorers-of-Fate | Inicializando sistema básico");
 
+  const { statusEffects = [], specialStatusEffects = {} } = game.system ?? {};
+  if (Array.isArray(statusEffects) && statusEffects.length > 0) {
+    CONFIG.statusEffects = foundry.utils.deepClone(statusEffects);
+  }
+  if (specialStatusEffects && Object.keys(specialStatusEffects).length > 0) {
+    CONFIG.specialStatusEffects = foundry.utils.mergeObject(
+      CONFIG.specialStatusEffects ?? {},
+      specialStatusEffects,
+      { inplace: false }
+    );
+  }
+
   // Registrar clases de documento
   CONFIG.Actor.documentClass = MyActor;
 
