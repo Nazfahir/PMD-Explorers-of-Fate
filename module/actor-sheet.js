@@ -361,7 +361,9 @@ export class MyActorSheet extends BaseActorSheet {
           <select name="eff">
             <option value="1">Normal (x1)</option>
             <option value="1.5">Súper efectivo (x1.5)</option>
+            <option value="2">Súper efectivo (x2)</option>
             <option value="0.5">No muy efectivo (x0.5)</option>
+            <option value="0.25">Muy poco efectivo (x0.25)</option>
           </select>
         </div>
         <hr/>
