@@ -252,6 +252,16 @@ export class MyActorSheet extends BaseActorSheet {
       const item = id ? this.actor.items.get(id) : null;
       if (item) await this._useGearItem(item);
     });
+
+    root.querySelectorAll("[data-action='toggle-equipped']").forEach((element) => {
+      element.addEventListener("change", async () => {
+        const id = element.closest("[data-item-id]")?.dataset.itemId;
+        if (!id) return;
+        const item = this.actor.items.get(id);
+        if (!item) return;
+        await item.update({ "system.equipped": !!element.checked });
+      });
+    });
   }
 
   async _restoreActorResources() {
