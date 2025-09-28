@@ -129,3 +129,85 @@
   color: var(--color-text-dark-5);
   font-style: italic;
 }
+
+/* === Pestaña de efectos activos === */
+.PMD-Explorers-of-Fate .effects-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effects-header {
+  align-items: center;
+  gap: 8px;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effects-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effects-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effects-list .effect {
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.2));
+  border-radius: 4px;
+  padding: 6px;
+  background: var(--color-bg-alt, rgba(0, 0, 0, 0.03));
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effects-list .effect.is-disabled {
+  opacity: 0.7;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effects-list .effect.is-suppressed {
+  border-style: dashed;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effect-icon img {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effect-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effect-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effect-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: var(--color-border, rgba(0, 0, 0, 0.1));
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effect-controls {
+  gap: 4px;
+}
+
+.PMD-Explorers-of-Fate .effects-panel .effect-controls .effect-control {
+  font-size: 0.75rem;
+}

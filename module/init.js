@@ -7,6 +7,10 @@ import { PMDItemSheet } from "./item-sheet.js";
 Hooks.once("init", function () {
   console.log("PMD-Explorers-of-Fate | Inicializando sistema básico");
 
+  loadTemplates([
+    "systems/PMD-Explorers-of-Fate/templates/parts/active-effects.hbs"
+  ]);
+
   // Registrar clases de documento
   CONFIG.Actor.documentClass = MyActor;
 

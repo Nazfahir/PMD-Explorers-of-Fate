@@ -2,11 +2,10 @@
 import { normalizeTypeValue } from "./pokemon-types.js";
 export class PMDItem extends Item {
   /** @override */
-  prepareDerivedData() {
-    super.prepareDerivedData();
+  prepareBaseData() {
+    super.prepareBaseData();
     const sys = this.system;
 
-    // Saneo básico y clamps donde corresponda
     const num = (v, d = 0) => {
       const n = Number(v);
       return Number.isFinite(n) ? n : d;
@@ -15,19 +14,16 @@ export class PMDItem extends Item {
     switch (this.type) {
       case "move": {
         sys.pp ??= { max: 10, value: 10 };
-        sys.pp.max   = Math.max(0, num(sys.pp.max, 10));
-        sys.pp.value = Math.clamp(num(sys.pp.value, sys.pp.max), 0, sys.pp.max);
+        sys.pp.max = Math.max(0, num(sys.pp.max, 10));
+        sys.pp.value = num(sys.pp.value, sys.pp.max);
 
         sys.accuracy = num(sys.accuracy, 75);
-
         sys.baseDamage = Math.max(0, num(sys.baseDamage, 10));
 
-        // Normaliza category
         if (!["physical", "special", "status"].includes(sys.category)) {
           sys.category = "physical";
         }
 
-        // Strings seguros
         sys.range   = String(sys.range ?? "");
         sys.element = normalizeTypeValue(sys.element);
         sys.effect  = String(sys.effect ?? "");
@@ -54,8 +50,8 @@ export class PMDItem extends Item {
 
         if (this.type === "consumable") {
           sys.uses ??= { max: 1, value: 1 };
-          sys.uses.max   = Math.max(0, Math.round(num(sys.uses.max, 1)));
-          sys.uses.value = Math.clamp(Math.round(num(sys.uses.value, sys.uses.max)), 0, sys.uses.max);
+          sys.uses.max = Math.max(0, Math.round(num(sys.uses.max, 1)));
+          sys.uses.value = Math.round(num(sys.uses.value, sys.uses.max));
         }
         break;
       }
@@ -64,6 +60,24 @@ export class PMDItem extends Item {
         const str = (v) => String(v ?? "");
         sys.effect = str(sys.effect);
         break;
+      }
+    }
+  }
+
+  /** @override */
+  prepareDerivedData() {
+    super.prepareDerivedData();
+    const sys = this.system;
+
+    if (this.type === "move") {
+      if (Number.isFinite(sys.pp?.max) && Number.isFinite(sys.pp?.value)) {
+        sys.pp.value = Math.clamp(sys.pp.value, 0, sys.pp.max);
+      }
+    }
+
+    if (this.type === "consumable") {
+      if (Number.isFinite(sys.uses?.max) && Number.isFinite(sys.uses?.value)) {
+        sys.uses.value = Math.clamp(sys.uses.value, 0, sys.uses.max);
       }
     }
   }

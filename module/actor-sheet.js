@@ -5,6 +5,7 @@ import {
   typeIndexFromValue,
   calculateTypeEffectiveness
 } from "./pokemon-types.js";
+import { mapActiveEffects, bindEffectControls } from "./effect-helpers.js";
 const BaseActorSheet =
   foundry?.appv1?.sheets?.ActorSheet ??
   foundry?.applications?.sheets?.ActorSheet ??
@@ -154,6 +155,8 @@ export class MyActorSheet extends BaseActorSheet {
       },
     ];
 
+    data.activeEffects = mapActiveEffects(this.actor);
+
     return data;
   }
 
@@ -263,6 +266,8 @@ export class MyActorSheet extends BaseActorSheet {
         await item.update({ "system.equipped": !!element.checked });
       });
     });
+
+    bindEffectControls(root, this.actor, "actor");
   }
 
   async _restoreActorResources() {
