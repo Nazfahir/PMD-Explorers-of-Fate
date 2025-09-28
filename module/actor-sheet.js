@@ -2,7 +2,8 @@
 import {
   TYPE_OPTIONS,
   normalizeTypeValue,
-  typeIndexFromValue
+  typeIndexFromValue,
+  calculateTypeEffectiveness
 } from "./pokemon-types.js";
 const BaseActorSheet =
   foundry?.appv1?.sheets?.ActorSheet ??
@@ -370,21 +371,34 @@ export class MyActorSheet extends BaseActorSheet {
     });
   }
 
-  async _promptDamageOptions({ itemName, isCrit, hasStab }) {
+  async _promptDamageOptions({ itemName, isCrit, hasStab, effectiveness, autoCalculated }) {
     return await new Promise((resolve) => {
       const safeResolve = onceResolver(resolve);
+      const effValue = Number.isFinite(effectiveness) ? effectiveness : 1;
+      const effNote = autoCalculated
+        ? `<p class="notes">Efectividad detectada automáticamente: ×${effValue}</p>`
+        : "";
+      const effOptions = [
+        { value: 1, label: "Normal (x1)" },
+        { value: 2, label: "Súper efectivo (x2)" },
+        { value: 1.5, label: "Súper efectivo (x1.5)" },
+        { value: 0.5, label: "No muy efectivo (x0.5)" },
+        { value: 0.25, label: "Muy poco efectivo (x0.25)" },
+        { value: 0, label: "Sin efecto (x0)" }
+      ];
+      const effSelectOptions = effOptions.map(({ value, label }) => {
+        const selected = value === effValue ? " selected" : "";
+        return `<option value="${value}"${selected}>${label}</option>`;
+      }).join("");
       const content = `
         <p class="notes">${hasStab
           ? "El STAB se aplicará automáticamente."
           : "Este movimiento no aplica STAB."}</p>
+        ${effNote}
         <div>
           <label>Efectividad:</label>
           <select name="eff">
-            <option value="1">Normal (x1)</option>
-            <option value="1.5">Súper efectivo (x1.5)</option>
-            <option value="2">Súper efectivo (x2)</option>
-            <option value="0.5">No muy efectivo (x0.5)</option>
-            <option value="0.25">Muy poco efectivo (x0.25)</option>
+            ${effSelectOptions}
           </select>
         </div>
         <hr/>
@@ -423,10 +437,10 @@ export class MyActorSheet extends BaseActorSheet {
                 return select?.value ?? "+";
               };
               const effSelect = element.querySelector("select[name='eff']");
-              const effValue = Number(effSelect?.value);
+              const effParsed = Number(effSelect?.value);
               safeResolve({
                 stab: !!hasStab,
-                effectiveness: Number.isFinite(effValue) ? effValue : 1,
+                effectiveness: Number.isFinite(effParsed) ? effParsed : 1,
                 stat: { op: getOp("stat"), val: parse("stat") },
                 ability: { op: getOp("ability"), val: parse("ability") },
                 weather: { op: getOp("weather"), val: parse("weather") },
@@ -455,6 +469,14 @@ export class MyActorSheet extends BaseActorSheet {
     return [
       normalizeTypeValue(this.actor.system?.type1),
       normalizeTypeValue(this.actor.system?.type2)
+    ].filter((value) => !!value);
+  }
+
+  _getTargetTypes(actor) {
+    if (!actor) return [];
+    return [
+      normalizeTypeValue(actor.system?.type1),
+      normalizeTypeValue(actor.system?.type2)
     ].filter((value) => !!value);
   }
 
@@ -521,7 +543,18 @@ export class MyActorSheet extends BaseActorSheet {
 
     if (canCalc) {
       const hasStab = this._moveHasStab(elem);
-      const opts = await this._promptDamageOptions({ itemName: item.name, isCrit, hasStab });
+      const defenderTypes = this._getTargetTypes(target);
+      const normalizedMove = normalizeTypeValue(elem);
+      const autoEffect = normalizedMove && defenderTypes.length > 0
+        ? calculateTypeEffectiveness(normalizedMove, defenderTypes)
+        : null;
+      const opts = await this._promptDamageOptions({
+        itemName: item.name,
+        isCrit,
+        hasStab,
+        effectiveness: autoEffect?.multiplier,
+        autoCalculated: !!autoEffect
+      });
       if (opts) {
         const { atkStat, defStat, atkKey, defKey } = this._getAttackAndDefense(cat, this.actor, target);
 
@@ -529,14 +562,23 @@ export class MyActorSheet extends BaseActorSheet {
         dmg = this._applyOp(dmg, opts.stat.op, opts.stat.val);
         dmg = this._applyOp(dmg, opts.ability.op, opts.ability.val);
         if (opts.stab) dmg += Number(this.actor.system?.stab ?? 0);
-        dmg *= opts.effectiveness;
-        if (isCrit) dmg *= 1.5;
-        dmg = this._applyOp(dmg, opts.weather.op, opts.weather.val);
-        dmg = this._applyOp(dmg, opts.terrain.op, opts.terrain.val);
-        dmg = this._applyOp(dmg, opts.enemy.op, opts.enemy.val);
-        dmg -= defStat;
+        const isImmune = opts.effectiveness === 0;
+        if (!isImmune) {
+          dmg *= opts.effectiveness;
+          if (isCrit) dmg *= 1.5;
+          dmg = this._applyOp(dmg, opts.weather.op, opts.weather.val);
+          dmg = this._applyOp(dmg, opts.terrain.op, opts.terrain.val);
+          dmg = this._applyOp(dmg, opts.enemy.op, opts.enemy.val);
+          dmg -= defStat;
+        }
 
-        const finalDamage = Math.max(1, Math.ceil(dmg));
+        const finalDamage = isImmune ? 0 : Math.max(1, Math.ceil(dmg));
+        const defLine = isImmune
+          ? `<div>− ${defKey}: <em>No aplica</em></div>`
+          : `<div>− ${defKey}: <b>${defStat}</b></div>`;
+        const finalNote = isImmune
+          ? "<small>(objetivo inmune)</small>"
+          : "<small>(redondeo ↑, mínimo 1)</small>";
 
         dmgBreakdownHTML = `
           <hr/>
@@ -549,8 +591,8 @@ export class MyActorSheet extends BaseActorSheet {
           <div>Clima: ${opts.weather.op} ${opts.weather.val}</div>
           <div>Terreno: ${opts.terrain.op} ${opts.terrain.val}</div>
           <div>Enemigo: ${opts.enemy.op} ${opts.enemy.val}</div>
-          <div>− ${defKey}: <b>${defStat}</b></div>
-          <div><b>Daño final: ${finalDamage}</b> <small>(redondeo ↑, mínimo 1)</small></div>
+          ${defLine}
+          <div><b>Daño final: ${finalDamage}</b> ${finalNote}</div>
         `;
       }
     }
