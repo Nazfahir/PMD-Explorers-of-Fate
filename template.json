@@ -13,6 +13,7 @@
         "speed": 0,
         "stab": 0,
         "basicattack": 0,
+        "accuracyBonus": 0,
         "lp": 0,
         "belly": 100,
         "pasiva": "",
