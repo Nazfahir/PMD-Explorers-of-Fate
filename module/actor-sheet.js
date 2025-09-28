@@ -632,54 +632,14 @@ export class MyActorSheet extends BaseActorSheet {
     }
 
     const newQuantity = Math.max(0, quantity - 1);
-    const itemUuid = item.uuid ?? null;
     const effectText = this._formatText(item.system?.effect ?? "");
     const itemName = foundry.utils.escapeHTML(item.name ?? "Objeto");
     const actorName = foundry.utils.escapeHTML(this.actor.name ?? "Personaje");
-
-    const effectsToCreate = (item.effects?.contents ?? [])
-      .filter((effect) => effect?.transfer !== false)
-      .map((effect) => {
-        const data = typeof effect.toObject === "function" ? effect.toObject() : effect;
-        if (!data) return null;
-        let clone;
-        if (foundry?.utils?.duplicate) {
-          clone = foundry.utils.duplicate(data);
-        } else if (typeof structuredClone === "function") {
-          clone = structuredClone(data);
-        } else {
-          try {
-            clone = JSON.parse(JSON.stringify(data));
-          } catch (err) {
-            clone = { ...data };
-          }
-        }
-        if (!clone) return null;
-        delete clone._id;
-        clone.origin = clone.origin || itemUuid;
-        clone.transfer = false;
-        clone.disabled = false;
-        if (clone.duration) {
-          delete clone.duration.startTime;
-          delete clone.duration.startRound;
-          delete clone.duration.startTurn;
-          delete clone.duration.combat;
-        }
-        if (!clone.name && item.name) {
-          clone.name = item.name;
-        }
-        return clone;
-      })
-      .filter((data) => data !== null);
 
     if (newQuantity > 0) {
       await item.update({ "system.quantity": newQuantity });
     } else {
       await this.actor.deleteEmbeddedDocuments("Item", [item.id]);
-    }
-
-    if (effectsToCreate.length) {
-      await this.actor.createEmbeddedDocuments("ActiveEffect", effectsToCreate);
     }
 
     const parts = [`<div><strong>${actorName}</strong> consumió ${itemName}.</div>`];
