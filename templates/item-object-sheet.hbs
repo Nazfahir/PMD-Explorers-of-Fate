@@ -28,6 +28,13 @@
           </div>
         {{/if}}
 
+        {{#if isEquipment}}
+          <div class="field">
+            <label>Equipado</label>
+            <input type="checkbox" name="system.equipped" {{checked system.equipped}} />
+          </div>
+        {{/if}}
+
         {{#if isTrait}}
           <div class="field full-width">
             <p class="notes">Los rasgos solo requieren un nombre y su efecto.</p>

@@ -64,7 +64,8 @@
     },
     "equipment": {
       "templates": ["baseObject"],
-      "slot": ""
+      "slot": "",
+      "equipped": false
     },
     "consumable": {
       "templates": ["baseObject"],
