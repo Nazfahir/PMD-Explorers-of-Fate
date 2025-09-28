@@ -6,6 +6,7 @@ import {
   calculateTypeEffectiveness
 } from "./pokemon-types.js";
 import { mapActiveEffects, bindEffectControls } from "./effect-helpers.js";
+import { CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG } from "./consumable-effects.js";
 const BaseActorSheet =
   foundry?.appv1?.sheets?.ActorSheet ??
   foundry?.applications?.sheets?.ActorSheet ??
@@ -637,6 +638,66 @@ export class MyActorSheet extends BaseActorSheet {
     const itemName = foundry.utils.escapeHTML(item.name ?? "Objeto");
     const actorName = foundry.utils.escapeHTML(this.actor.name ?? "Personaje");
 
+    const permanentEffect =
+      typeof item.system?.permanentEffect === "object" && !Array.isArray(item.system?.permanentEffect)
+        ? item.system.permanentEffect
+        : {};
+    const attributeKey = String(permanentEffect?.attribute ?? "");
+    const attributeConfig = CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG[attributeKey];
+    const effectAmount = Number(permanentEffect?.amount ?? 0);
+    const effectMode = permanentEffect?.mode === "subtract" ? "subtract" : "add";
+
+    let permanentUpdates = null;
+    let permanentMessage = null;
+
+    if (attributeConfig && Number.isFinite(effectAmount) && effectAmount > 0) {
+      const getProperty =
+        foundry?.utils?.getProperty ??
+        ((object, path) => {
+          if (!object || typeof path !== "string") return undefined;
+          return path
+            .split(".")
+            .reduce((value, part) => (value && typeof value === "object" ? value[part] : undefined), object);
+        });
+
+      const baseValueRaw = getProperty(this.actor, attributeConfig.path);
+      const baseValue = Number(baseValueRaw);
+      const safeBase = Number.isFinite(baseValue) ? baseValue : 0;
+      const magnitude = Math.abs(effectAmount);
+      const signedDelta = effectMode === "subtract" ? -magnitude : magnitude;
+
+      let newValue = safeBase + signedDelta;
+      if (typeof attributeConfig.clamp === "function") {
+        newValue = attributeConfig.clamp(newValue, this.actor);
+      }
+
+      if (Number.isFinite(newValue)) {
+        const updates = {};
+        const primaryChanged = !Object.is(newValue, safeBase);
+        if (primaryChanged) {
+          updates[attributeConfig.path] = newValue;
+        }
+
+        if (typeof attributeConfig.afterUpdate === "function") {
+          const additional = attributeConfig.afterUpdate(newValue, this.actor);
+          if (additional && typeof additional === "object") {
+            Object.assign(updates, additional);
+          }
+        }
+
+        if (Object.keys(updates).length) {
+          permanentUpdates = updates;
+
+          if (primaryChanged) {
+            const actualDelta = newValue - safeBase;
+            const deltaText = `${actualDelta >= 0 ? "+" : ""}${actualDelta}`;
+            const finalValue = newValue;
+            permanentMessage = `<div><strong>${attributeConfig.label}:</strong> ${deltaText} (ahora ${finalValue})</div>`;
+          }
+        }
+      }
+    }
+
     const effectsToCreate = (item.effects?.contents ?? [])
       .filter((effect) => {
         if (!effect) return false;
@@ -687,8 +748,13 @@ export class MyActorSheet extends BaseActorSheet {
       await this.actor.createEmbeddedDocuments("ActiveEffect", effectsToCreate);
     }
 
+    if (permanentUpdates) {
+      await this.actor.update(permanentUpdates);
+    }
+
     const parts = [`<div><strong>${actorName}</strong> consumió ${itemName}.</div>`];
     if (effectText) parts.push(`<div><strong>Efecto:</strong> ${effectText}</div>`);
+    if (permanentMessage) parts.push(permanentMessage);
     if (newQuantity > 0) parts.push(`<div>Restantes: ${newQuantity}</div>`);
 
     await ChatMessage.create({
