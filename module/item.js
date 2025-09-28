@@ -1,4 +1,5 @@
 // module/item.js
+import { normalizeTypeValue } from "./pokemon-types.js";
 export class PMDItem extends Item {
   /** @override */
   prepareDerivedData() {
@@ -28,7 +29,7 @@ export class PMDItem extends Item {
 
         // Strings seguros
         sys.range   = String(sys.range ?? "");
-        sys.element = String(sys.element ?? "");
+        sys.element = normalizeTypeValue(sys.element);
         sys.effect  = String(sys.effect ?? "");
         break;
       }

@@ -1,4 +1,5 @@
 // module/actor.js
+import { normalizeTypeValue } from "./pokemon-types.js";
 export class MyActor extends Actor {
   /** @override */
   prepareDerivedData() {
@@ -20,8 +21,8 @@ export class MyActor extends Actor {
     sys.stab        = num(sys.stab, 0);
     sys.basicattack = num(sys.basicattack, 0);
     sys.belly       = num(sys.belly, 100);
-    sys.type1 = String(sys.type1 ?? "");
-    sys.type2 = String(sys.type2 ?? "");
+    sys.type1 = normalizeTypeValue(sys.type1);
+    sys.type2 = normalizeTypeValue(sys.type2);
     sys.pasiva = String(sys.pasiva ?? "");
     sys.destino = String(sys.destino ?? "");
     sys.leyenda = String(sys.leyenda ?? "");

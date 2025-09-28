@@ -34,12 +34,21 @@
         <!-- Nuevos campos: Tipo 1 y Tipo 2 -->
         <div>
           <label>Tipo 1</label>
-          <input type="text" name="system.type1" value="{{system.type1}}"/>
+          <input type="hidden" name="system.type1" value="{{system.type1}}" data-type-value="type1"/>
+          <input type="range" min="0" max="{{typeMaxIndex}}" value="{{typeIndices.type1}}" step="1" list="actor-type-options-{{actor._id}}" data-type-slider="type1"/>
+          <span class="type-label" data-type-display="type1">{{typeLabels.type1}}</span>
         </div>
         <div>
           <label>Tipo 2</label>
-          <input type="text" name="system.type2" value="{{system.type2}}"/>
+          <input type="hidden" name="system.type2" value="{{system.type2}}" data-type-value="type2"/>
+          <input type="range" min="0" max="{{typeMaxIndex}}" value="{{typeIndices.type2}}" step="1" list="actor-type-options-{{actor._id}}" data-type-slider="type2"/>
+          <span class="type-label" data-type-display="type2">{{typeLabels.type2}}</span>
         </div>
+        <datalist id="actor-type-options-{{actor._id}}">
+          {{#each typeOptions as |option idx|}}
+            <option value="{{idx}}" label="{{option.label}}"></option>
+          {{/each}}
+        </datalist>
       </div>
     </div>
   </header>

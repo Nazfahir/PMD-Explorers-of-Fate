@@ -1,4 +1,10 @@
 // module/item-sheet.js
+import {
+  TYPE_OPTIONS,
+  typeIndexFromValue,
+  typeLabelFromValue,
+  typeValueFromIndex
+} from "./pokemon-types.js";
 const BaseItemSheet =
   foundry?.appv1?.sheets?.ItemSheet ??
   foundry?.applications?.sheets?.ItemSheet ??
@@ -83,6 +89,43 @@ export class PMDItemSheet extends BaseItemSheet {
     data.isGear = this.item.type === "gear";
     data.isTrait = this.item.type === "trait";
     data.itemType = this.item.type;
+    data.typeOptions = TYPE_OPTIONS;
+    data.typeMaxIndex = TYPE_OPTIONS.length - 1;
+    data.typeIndex = typeIndexFromValue(this.item.system?.element);
+    data.typeLabel = typeLabelFromValue(this.item.system?.element);
     return data;
+  }
+
+  /** @override */
+  activateListeners(html) {
+    if (typeof super.activateListeners === "function") {
+      super.activateListeners(html);
+    }
+
+    const raw = html?.element ?? html;
+    const root = raw instanceof HTMLElement || raw instanceof DocumentFragment
+      ? raw
+      : raw?.[0];
+    if (!(root instanceof HTMLElement) && !(root instanceof DocumentFragment)) return;
+    if (!this.isEditable) return;
+
+    const syncTypeInput = (slider) => {
+      const hidden = root.querySelector("[data-move-type-value]");
+      const display = root.querySelector("[data-move-type-display]");
+      const value = typeValueFromIndex(slider.value);
+      if (hidden && hidden.value !== value) {
+        hidden.value = value;
+        hidden.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      if (display) {
+        display.textContent = typeLabelFromValue(value);
+      }
+    };
+
+    root.querySelectorAll("[data-move-type-slider]").forEach((slider) => {
+      slider.addEventListener("input", () => syncTypeInput(slider));
+      slider.addEventListener("change", () => syncTypeInput(slider));
+      syncTypeInput(slider);
+    });
   }
 }

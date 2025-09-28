@@ -1,4 +1,11 @@
 // module/actor-sheet.js
+import {
+  TYPE_OPTIONS,
+  normalizeTypeValue,
+  typeIndexFromValue,
+  typeLabelFromValue,
+  typeValueFromIndex
+} from "./pokemon-types.js";
 const BaseActorSheet =
   foundry?.appv1?.sheets?.ActorSheet ??
   foundry?.applications?.sheets?.ActorSheet ??
@@ -91,6 +98,17 @@ export class MyActorSheet extends BaseActorSheet {
     const data = context ?? {};
     data.system = this.actor.system;
 
+    data.typeOptions = TYPE_OPTIONS;
+    data.typeMaxIndex = TYPE_OPTIONS.length - 1;
+    data.typeIndices = {
+      type1: typeIndexFromValue(this.actor.system?.type1),
+      type2: typeIndexFromValue(this.actor.system?.type2)
+    };
+    data.typeLabels = {
+      type1: typeLabelFromValue(this.actor.system?.type1),
+      type2: typeLabelFromValue(this.actor.system?.type2)
+    };
+
     data.skillList = [
       { key: "athletics",   label: "Athletics" },
       { key: "craft",       label: "Craft" },
@@ -153,6 +171,27 @@ export class MyActorSheet extends BaseActorSheet {
 
     const root = resolveHTMLElement(html);
     if (!root || !this.isEditable) return;
+
+    const syncTypeInput = (slider) => {
+      const key = slider.dataset.typeSlider;
+      if (!key) return;
+      const hidden = root.querySelector(`[data-type-value='${key}']`);
+      const display = root.querySelector(`[data-type-display='${key}']`);
+      const value = typeValueFromIndex(slider.value);
+      if (hidden && hidden.value !== value) {
+        hidden.value = value;
+        hidden.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      if (display) {
+        display.textContent = typeLabelFromValue(value);
+      }
+    };
+
+    root.querySelectorAll("[data-type-slider]").forEach((slider) => {
+      slider.addEventListener("input", () => syncTypeInput(slider));
+      slider.addEventListener("change", () => syncTypeInput(slider));
+      syncTypeInput(slider);
+    });
 
     const addClick = (selector, handler) => {
       root.querySelectorAll(selector).forEach((element) => {
@@ -349,13 +388,13 @@ export class MyActorSheet extends BaseActorSheet {
     });
   }
 
-  async _promptDamageOptions({ itemName, isCrit }) {
+  async _promptDamageOptions({ itemName, isCrit, hasStab }) {
     return await new Promise((resolve) => {
       const safeResolve = onceResolver(resolve);
       const content = `
-        <div>
-          <label><input type="checkbox" name="stab"/> Aplicar STAB</label>
-        </div>
+        <p class="notes">${hasStab
+          ? "El STAB se aplicará automáticamente."
+          : "Este movimiento no aplica STAB."}</p>
         <div>
           <label>Efectividad:</label>
           <select name="eff">
@@ -403,9 +442,8 @@ export class MyActorSheet extends BaseActorSheet {
               };
               const effSelect = element.querySelector("select[name='eff']");
               const effValue = Number(effSelect?.value);
-              const stabCheckbox = element.querySelector("input[name='stab']");
               safeResolve({
-                stab: !!stabCheckbox?.checked,
+                stab: !!hasStab,
                 effectiveness: Number.isFinite(effValue) ? effValue : 1,
                 stat: { op: getOp("stat"), val: parse("stat") },
                 ability: { op: getOp("ability"), val: parse("ability") },
@@ -429,6 +467,19 @@ export class MyActorSheet extends BaseActorSheet {
     if (op === "*") return x * v;
     if (op === "/") return x / (v || 1);
     return x;
+  }
+
+  _getActorTypes() {
+    return [
+      normalizeTypeValue(this.actor.system?.type1),
+      normalizeTypeValue(this.actor.system?.type2)
+    ].filter((value) => !!value);
+  }
+
+  _moveHasStab(moveType) {
+    const normalizedMove = normalizeTypeValue(moveType);
+    if (!normalizedMove) return false;
+    return this._getActorTypes().some((actorType) => actorType === normalizedMove);
   }
 
   _getAttackAndDefense(cat, attacker, defender) {
@@ -487,7 +538,8 @@ export class MyActorSheet extends BaseActorSheet {
     let dmgBreakdownHTML = "";
 
     if (canCalc) {
-      const opts = await this._promptDamageOptions({ itemName: item.name, isCrit });
+      const hasStab = this._moveHasStab(elem);
+      const opts = await this._promptDamageOptions({ itemName: item.name, isCrit, hasStab });
       if (opts) {
         const { atkStat, defStat, atkKey, defKey } = this._getAttackAndDefense(cat, this.actor, target);
 
