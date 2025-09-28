@@ -1,5 +1,6 @@
 // module/item.js
 import { normalizeTypeValue } from "./pokemon-types.js";
+import { CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG } from "./consumable-effects.js";
 export class PMDItem extends Item {
   /** @override */
   prepareBaseData() {
@@ -52,6 +53,22 @@ export class PMDItem extends Item {
           sys.uses ??= { max: 1, value: 1 };
           sys.uses.max = Math.max(0, Math.round(num(sys.uses.max, 1)));
           sys.uses.value = Math.round(num(sys.uses.value, sys.uses.max));
+
+          const permanentEffect =
+            typeof sys.permanentEffect === "object" && !Array.isArray(sys.permanentEffect)
+              ? sys.permanentEffect
+              : {};
+
+          const attributeKey = String(permanentEffect.attribute ?? "");
+          const isValidAttribute = attributeKey in CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG;
+          const mode = permanentEffect.mode === "subtract" ? "subtract" : "add";
+          const amount = Math.max(0, num(permanentEffect.amount, 0));
+
+          sys.permanentEffect = {
+            attribute: isValidAttribute ? attributeKey : "",
+            mode,
+            amount,
+          };
         }
         break;
       }

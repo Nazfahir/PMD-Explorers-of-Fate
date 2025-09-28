@@ -1,6 +1,7 @@
 // module/item-sheet.js
 import { TYPE_OPTIONS } from "./pokemon-types.js";
 import { mapActiveEffects, bindEffectControls } from "./effect-helpers.js";
+import { CONSUMABLE_PERMANENT_ATTRIBUTE_OPTIONS } from "./consumable-effects.js";
 const BaseItemSheet =
   foundry?.appv1?.sheets?.ItemSheet ??
   foundry?.applications?.sheets?.ItemSheet ??
@@ -98,6 +99,7 @@ export class PMDItemSheet extends BaseItemSheet {
     data.itemType = this.item.type;
     data.typeOptions = TYPE_OPTIONS;
     data.activeEffects = mapActiveEffects(this.item);
+    data.consumablePermanentAttributes = CONSUMABLE_PERMANENT_ATTRIBUTE_OPTIONS;
     return data;
   }
 
