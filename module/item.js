@@ -81,4 +81,19 @@ export class PMDItem extends Item {
       }
     }
   }
+
+  /** @override */
+  applyActiveEffects(actor, changeData) {
+    if (this.type === "equipment" && !this.system?.equipped) {
+      return;
+    }
+
+    if (this.type === "consumable") {
+      return;
+    }
+
+    if (typeof super.applyActiveEffects === "function") {
+      return super.applyActiveEffects(actor, changeData);
+    }
+  }
 }
