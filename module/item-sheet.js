@@ -1,5 +1,6 @@
 // module/item-sheet.js
 import { TYPE_OPTIONS } from "./pokemon-types.js";
+import { mapActiveEffects, bindEffectControls } from "./effect-helpers.js";
 const BaseItemSheet =
   foundry?.appv1?.sheets?.ItemSheet ??
   foundry?.applications?.sheets?.ItemSheet ??
@@ -26,6 +27,17 @@ function createItemSheetOptions() {
     submitOnChange: true,
     closeOnSubmit: false
   };
+}
+
+function resolveHTMLElement(html) {
+  if (!html) return null;
+  const element = html?.element ?? html;
+  if (element instanceof HTMLElement || element instanceof DocumentFragment) return element;
+  if (typeof element === "object" && element !== null && 0 in element) {
+    const candidate = element[0];
+    if (candidate instanceof HTMLElement || candidate instanceof DocumentFragment) return candidate;
+  }
+  return null;
 }
 
 export class PMDItemSheet extends BaseItemSheet {
@@ -85,6 +97,7 @@ export class PMDItemSheet extends BaseItemSheet {
     data.isTrait = this.item.type === "trait";
     data.itemType = this.item.type;
     data.typeOptions = TYPE_OPTIONS;
+    data.activeEffects = mapActiveEffects(this.item);
     return data;
   }
 
@@ -93,5 +106,11 @@ export class PMDItemSheet extends BaseItemSheet {
     if (typeof super.activateListeners === "function") {
       super.activateListeners(html);
     }
+
+    if (!this.isEditable) return;
+    const root = resolveHTMLElement(html);
+    if (!root) return;
+
+    bindEffectControls(root, this.item, "item");
   }
 }

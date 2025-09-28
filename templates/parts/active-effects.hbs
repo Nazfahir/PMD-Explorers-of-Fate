@@ -1,0 +1,54 @@
+<section class="effects-panel" data-effect-scope="{{scope}}">
+  <header class="effects-header flexrow">
+    <h3 class="effects-title">Efectos activos</h3>
+    {{#if editable}}
+      <button type="button" data-action="create-effect">+ Nuevo efecto</button>
+    {{/if}}
+  </header>
+
+  {{#if effects.length}}
+    <ol class="effects-list">
+      {{#each effects}}
+        <li class="effect flexrow{{#if disabled}} is-disabled{{/if}}{{#if isSuppressed}} is-suppressed{{/if}}" data-effect-id="{{id}}">
+          <div class="effect-icon">
+            <img src="{{icon}}" alt="{{name}}" width="32" height="32" loading="lazy" />
+          </div>
+          <div class="effect-details">
+            <div class="effect-title-row">
+              <strong>{{name}}</strong>
+              {{#if disabled}}
+                <span class="effect-tag">Desactivado</span>
+              {{/if}}
+              {{#if isSuppressed}}
+                <span class="effect-tag">Anulado</span>
+              {{/if}}
+            </div>
+            {{#if durationLabel}}
+              <div class="effect-duration small">Duración: {{durationLabel}}</div>
+            {{/if}}
+            {{#if changes.length}}
+              <ul class="effect-changes small">
+                {{#each changes}}
+                  <li><code>{{key}}</code> {{modeLabel}} → <strong>{{value}}</strong></li>
+                {{/each}}
+              </ul>
+            {{else}}
+              <p class="notes small">Sin cambios definidos.</p>
+            {{/if}}
+          </div>
+          {{#if ../editable}}
+            <div class="effect-controls flexcol">
+              <button type="button" class="effect-control" data-action="toggle-effect">
+                {{#if disabled}}Activar{{else}}Desactivar{{/if}}
+              </button>
+              <button type="button" class="effect-control" data-action="edit-effect">Editar</button>
+              <button type="button" class="effect-control" data-action="delete-effect">Eliminar</button>
+            </div>
+          {{/if}}
+        </li>
+      {{/each}}
+    </ol>
+  {{else}}
+    <p class="notes">No hay efectos activos.</p>
+  {{/if}}
+</section>
