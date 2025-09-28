@@ -28,7 +28,7 @@
           </div>
         {{/if}}
 
-        {{#if isEquipment}}
+        {{#if (or isEquipment isConsumable)}}
           <div class="field">
             <label>Equipado</label>
             <input type="checkbox" name="system.equipped" {{checked system.equipped}} />

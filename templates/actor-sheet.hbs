@@ -309,6 +309,7 @@
                 <div class="item-name">Nombre</div>
                 <div class="item-prop">Cant.</div>
                 <div class="item-prop">Valor</div>
+                <div class="item-prop">Equip.</div>
                 <div class="item-prop notes">Efecto</div>
                 <div class="item-controls"></div>
               </li>
@@ -320,6 +321,9 @@
                   </div>
                   <div class="item-prop">{{item.system.quantity}}</div>
                   <div class="item-prop">{{item.system.value}}</div>
+                  <div class="item-prop">
+                    <input type="checkbox" data-action="toggle-equipped" {{checked item.system.equipped}} />
+                  </div>
                   <div class="item-prop notes">
                     {{#if item.system.effect}}
                       {{item.system.effect}}
