@@ -80,5 +80,41 @@ export class PMDItem extends Item {
         sys.uses.value = Math.clamp(sys.uses.value, 0, sys.uses.max);
       }
     }
+
+    const effects = this.effects?.contents ?? [];
+    if (!effects.length) return;
+
+    if (this.type === "equipment") {
+      const isEquipped = !!sys?.equipped;
+      for (const effect of effects) {
+        if (!effect) continue;
+        const source = effect._source ?? {};
+        const baseDisabled = source.disabled === true;
+        const baseTransfer = source.transfer !== false;
+        effect.disabled = baseDisabled || !isEquipped;
+        effect.transfer = baseTransfer && isEquipped;
+      }
+    } else if (this.type === "consumable") {
+      for (const effect of effects) {
+        if (!effect) continue;
+        effect.disabled = true;
+        effect.transfer = false;
+      }
+    }
+  }
+
+  /** @override */
+  applyActiveEffects(actor, changeData) {
+    if (this.type === "equipment" && !this.system?.equipped) {
+      return;
+    }
+
+    if (this.type === "consumable") {
+      return;
+    }
+
+    if (typeof super.applyActiveEffects === "function") {
+      return super.applyActiveEffects(actor, changeData);
+    }
   }
 }
