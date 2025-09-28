@@ -38,7 +38,8 @@ export const CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG = {
     path: "system.hp.max",
     clamp: clampHpMax,
     afterUpdate: (newMax, actor) => {
-      const currentHp = Number(actor?.system?.hp?.value);
+      const sourceHp = actor?._source?.system?.hp?.value;
+      const currentHp = Number(sourceHp ?? actor?.system?.hp?.value);
       if (!Number.isFinite(currentHp)) return null;
       const safeMax = Number.isFinite(newMax) ? Math.max(0, Math.round(newMax)) : 0;
       const clamped = Math.clamp(Math.round(currentHp), 0, safeMax);

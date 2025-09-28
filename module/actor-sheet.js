@@ -660,7 +660,8 @@ export class MyActorSheet extends BaseActorSheet {
             .reduce((value, part) => (value && typeof value === "object" ? value[part] : undefined), object);
         });
 
-      const baseValueRaw = getProperty(this.actor, attributeConfig.path);
+      const actorSource = this.actor?._source ?? {};
+      const baseValueRaw = getProperty(actorSource, attributeConfig.path);
       const baseValue = Number(baseValueRaw);
       const safeBase = Number.isFinite(baseValue) ? baseValue : 0;
       const magnitude = Math.abs(effectAmount);
