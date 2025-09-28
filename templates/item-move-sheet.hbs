@@ -42,15 +42,12 @@
 
         <div class="field">
           <label>Tipo</label>
-          <input type="hidden" name="system.element" value="{{system.element}}" data-move-type-value/>
-          <input type="range" min="0" max="{{typeMaxIndex}}" value="{{typeIndex}}" step="1" list="move-type-options-{{item._id}}" data-move-type-slider/>
-          <span class="type-label" data-move-type-display>{{typeLabel}}</span>
+          <select name="system.element">
+            {{#each typeOptions as |option|}}
+              <option value="{{option.value}}" {{#if (eq option.value ../system.element)}}selected{{/if}}>{{option.label}}</option>
+            {{/each}}
+          </select>
         </div>
-        <datalist id="move-type-options-{{item._id}}">
-          {{#each typeOptions as |option idx|}}
-            <option value="{{idx}}" label="{{option.label}}"></option>
-          {{/each}}
-        </datalist>
         <div class="field">
           <label>Daño base</label>
           <input type="number" name="system.baseDamage" value="{{system.baseDamage}}" data-dtype="Number" min="0"/>
