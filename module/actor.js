@@ -19,6 +19,7 @@ export class MyActor extends Actor {
     sys.speed       = num(sys.speed, 0);
     sys.stab        = num(sys.stab, 0);
     sys.basicattack = num(sys.basicattack, 0);
+    sys.accuracyBonus = num(sys.accuracyBonus, 0);
     sys.belly       = num(sys.belly, 100);
     sys.lp          = num(sys.lp, 0);
 

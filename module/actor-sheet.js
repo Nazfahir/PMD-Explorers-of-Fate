@@ -523,7 +523,8 @@ export class MyActorSheet extends BaseActorSheet {
     const accBonus = await this._promptAttackBonus(item.name ?? "Ataque");
     if (accBonus === null) return;
     const baseAcc = Number(item.system?.accuracy ?? 0);
-    const finalThreshold = baseAcc + accBonus;
+    const globalAccBonus = Number(this.actor.system?.accuracyBonus ?? 0);
+    const finalThreshold = baseAcc + accBonus + globalAccBonus;
 
     // Tirada d100
     const roll = await (new Roll("1d100")).evaluate({ async: true });
@@ -608,7 +609,16 @@ export class MyActorSheet extends BaseActorSheet {
       <div><strong>Usa Movimiento:</strong> ${foundry.utils.escapeHTML(item.name)}</div>
       <div><small>${elem ? `Tipo: ${elem} · ` : ""}${cat ? `Categoría: ${cat}` : ""}${rng ? ` · Rango: ${rng}` : ""}</small></div>
       <hr/>
-      <div>Precisión base: <b>${baseAcc}</b> ${accBonus ? `(bono ${accBonus > 0 ? "+" : ""}${accBonus})` : ""}</div>
+      <div>Precisión base: <b>${baseAcc}</b> ${(() => {
+        const parts = [];
+        if (globalAccBonus) {
+          parts.push(`bono global ${globalAccBonus > 0 ? "+" : ""}${globalAccBonus}`);
+        }
+        if (accBonus) {
+          parts.push(`bono situacional ${accBonus > 0 ? "+" : ""}${accBonus}`);
+        }
+        return parts.length ? `(${parts.join(' · ')})` : "";
+      })()}</div>
       <div>Umbral final: <b>${finalThreshold}</b></div>
       <div>d100: <b>${raw}</b></div>
       <div>Chequeo: ${isHit ? '<span class="roll-success">ACIERTO</span>' : '<span class="roll-failure">FALLO</span>'} ${isCrit ? '· <b>CRÍTICO</b>' : ''}</div>

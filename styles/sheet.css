@@ -211,3 +211,8 @@
 .PMD-Explorers-of-Fate .effects-panel .effect-controls .effect-control {
   font-size: 0.75rem;
 }
+
+.pmd-effect-attribute-select {
+  width: 100%;
+  margin-bottom: 4px;
+}

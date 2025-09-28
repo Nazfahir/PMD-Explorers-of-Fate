@@ -82,12 +82,25 @@ export const CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG = {
     path: "system.spDefense",
     clamp: clampInteger,
   },
+  accuracyBonus: {
+    label: "Precisión global",
+    path: "system.accuracyBonus",
+    clamp: clampInteger,
+  },
 };
 
 export const CONSUMABLE_PERMANENT_ATTRIBUTE_OPTIONS = [
   { key: "", label: "Sin efecto permanente" },
   ...Object.entries(CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG).map(([key, config]) => ({
     key,
+    label: config.label,
+  })),
+];
+
+export const ACTIVE_EFFECT_ATTRIBUTE_OPTIONS = [
+  { value: "", label: "Selecciona atributo…" },
+  ...Object.values(CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG).map((config) => ({
+    value: config.path,
     label: config.label,
   })),
 ];

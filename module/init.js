@@ -3,6 +3,7 @@ import { MyActor } from "./actor.js";
 import { MyActorSheet } from "./actor-sheet.js";
 import { PMDItem } from "./item.js";
 import { PMDItemSheet } from "./item-sheet.js";
+import { setupActiveEffectUI } from "./active-effect-ui.js";
 
 Hooks.once("init", function () {
   console.log("PMD-Explorers-of-Fate | Inicializando sistema básico");
@@ -10,6 +11,8 @@ Hooks.once("init", function () {
   loadTemplates([
     "systems/PMD-Explorers-of-Fate/templates/parts/active-effects.hbs"
   ]);
+
+  setupActiveEffectUI();
 
   // Registrar clases de documento
   CONFIG.Actor.documentClass = MyActor;
