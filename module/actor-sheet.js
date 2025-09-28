@@ -2,9 +2,7 @@
 import {
   TYPE_OPTIONS,
   normalizeTypeValue,
-  typeIndexFromValue,
-  typeLabelFromValue,
-  typeValueFromIndex
+  typeIndexFromValue
 } from "./pokemon-types.js";
 const BaseActorSheet =
   foundry?.appv1?.sheets?.ActorSheet ??
@@ -99,14 +97,9 @@ export class MyActorSheet extends BaseActorSheet {
     data.system = this.actor.system;
 
     data.typeOptions = TYPE_OPTIONS;
-    data.typeMaxIndex = TYPE_OPTIONS.length - 1;
     data.typeIndices = {
       type1: typeIndexFromValue(this.actor.system?.type1),
       type2: typeIndexFromValue(this.actor.system?.type2)
-    };
-    data.typeLabels = {
-      type1: typeLabelFromValue(this.actor.system?.type1),
-      type2: typeLabelFromValue(this.actor.system?.type2)
     };
 
     data.skillList = [
@@ -171,27 +164,6 @@ export class MyActorSheet extends BaseActorSheet {
 
     const root = resolveHTMLElement(html);
     if (!root || !this.isEditable) return;
-
-    const syncTypeInput = (slider) => {
-      const key = slider.dataset.typeSlider;
-      if (!key) return;
-      const hidden = root.querySelector(`[data-type-value='${key}']`);
-      const display = root.querySelector(`[data-type-display='${key}']`);
-      const value = typeValueFromIndex(slider.value);
-      if (hidden && hidden.value !== value) {
-        hidden.value = value;
-        hidden.dispatchEvent(new Event("change", { bubbles: true }));
-      }
-      if (display) {
-        display.textContent = typeLabelFromValue(value);
-      }
-    };
-
-    root.querySelectorAll("[data-type-slider]").forEach((slider) => {
-      slider.addEventListener("input", () => syncTypeInput(slider));
-      slider.addEventListener("change", () => syncTypeInput(slider));
-      syncTypeInput(slider);
-    });
 
     const addClick = (selector, handler) => {
       root.querySelectorAll(selector).forEach((element) => {

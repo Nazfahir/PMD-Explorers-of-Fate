@@ -7,6 +7,10 @@
 
       <div class="grid two-col">
         <div>
+          <label>Especie</label>
+          <input type="text" name="system.species" value="{{system.species}}" />
+        </div>
+        <div>
           <label>Nivel</label>
           <input type="number" name="system.lvl" value="{{system.lvl}}" data-dtype="Number"/>
         </div>
@@ -34,21 +38,20 @@
         <!-- Nuevos campos: Tipo 1 y Tipo 2 -->
         <div>
           <label>Tipo 1</label>
-          <input type="hidden" name="system.type1" value="{{system.type1}}" data-type-value="type1"/>
-          <input type="range" min="0" max="{{typeMaxIndex}}" value="{{typeIndices.type1}}" step="1" list="actor-type-options-{{actor._id}}" data-type-slider="type1"/>
-          <span class="type-label" data-type-display="type1">{{typeLabels.type1}}</span>
+          <select name="system.type1">
+            {{#each typeOptions as |option idx|}}
+              <option value="{{option.value}}" {{#if (eq idx ../typeIndices.type1)}}selected{{/if}}>{{option.label}}</option>
+            {{/each}}
+          </select>
         </div>
         <div>
           <label>Tipo 2</label>
-          <input type="hidden" name="system.type2" value="{{system.type2}}" data-type-value="type2"/>
-          <input type="range" min="0" max="{{typeMaxIndex}}" value="{{typeIndices.type2}}" step="1" list="actor-type-options-{{actor._id}}" data-type-slider="type2"/>
-          <span class="type-label" data-type-display="type2">{{typeLabels.type2}}</span>
+          <select name="system.type2">
+            {{#each typeOptions as |option idx|}}
+              <option value="{{option.value}}" {{#if (eq idx ../typeIndices.type2)}}selected{{/if}}>{{option.label}}</option>
+            {{/each}}
+          </select>
         </div>
-        <datalist id="actor-type-options-{{actor._id}}">
-          {{#each typeOptions as |option idx|}}
-            <option value="{{idx}}" label="{{option.label}}"></option>
-          {{/each}}
-        </datalist>
       </div>
     </div>
   </header>
