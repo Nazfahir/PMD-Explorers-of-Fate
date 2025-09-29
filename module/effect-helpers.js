@@ -86,11 +86,12 @@ export function bindEffectControls(root, document, scope) {
       const defaultName = i18n?.has?.("PMD.NewEffect", { strict: false })
         ? i18n.localize("PMD.NewEffect")
         : "Nuevo efecto";
+      const isMove = document?.type === "move";
       const effectData = {
         name: defaultName,
         icon: DEFAULT_ICON,
         origin: document.uuid ?? null,
-        disabled: false,
+        disabled: isMove,
         changes: []
       };
       const created = await document.createEmbeddedDocuments("ActiveEffect", [effectData]);
