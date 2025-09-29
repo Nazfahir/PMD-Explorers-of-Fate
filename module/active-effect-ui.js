@@ -3,6 +3,7 @@ import { ACTIVE_EFFECT_ATTRIBUTE_OPTIONS } from "./consumable-effects.js";
 
 const KEY_INPUT_SELECTOR = "input[name][name$='.key']";
 const SELECT_CLASS = "pmd-effect-attribute-select";
+const TARGET_TOGGLE_SELECTOR = "[data-pmd-target-toggle]";
 
 function findRootElement(html) {
   if (!html) return null;
@@ -64,6 +65,85 @@ function applyAttributeSelects(root) {
   });
 }
 
+function getEffectFromSheet(sheet) {
+  if (!sheet) return null;
+  if (sheet.object) return sheet.object;
+  if (sheet.document) return sheet.document;
+  return null;
+}
+
+function getMoveParentItem(sheet) {
+  const effect = getEffectFromSheet(sheet);
+  const parent = effect?.parent ?? null;
+  if (!parent) return null;
+  const documentName = parent.documentName ?? parent.constructor?.documentName ?? null;
+  if (documentName && documentName !== "Item") return null;
+  if (parent?.type !== "move") return null;
+  return parent;
+}
+
+function getApplyToTarget(effect) {
+  if (!effect) return false;
+  if (typeof effect.getFlag === "function") {
+    const flag = effect.getFlag("pmd", "applyToTarget");
+    if (flag !== undefined) return !!flag;
+  }
+  return !!effect?.flags?.pmd?.applyToTarget;
+}
+
+function ensureTargetToggle(sheet, root) {
+  if (!root) return;
+  const form = root.querySelector("form") ?? root.closest?.("form");
+  if (!form) return;
+
+  const parentItem = getMoveParentItem(sheet);
+  const existing = form.querySelector(TARGET_TOGGLE_SELECTOR);
+
+  if (!parentItem) {
+    if (existing) existing.remove();
+    return;
+  }
+
+  const effect = getEffectFromSheet(sheet);
+  const isChecked = getApplyToTarget(effect);
+
+  let container = existing;
+  if (!container) {
+    container = document.createElement("div");
+    container.classList.add("form-group");
+    container.dataset.pmdTargetToggle = "true";
+
+    const label = document.createElement("label");
+    label.textContent = "Aplicar a objetivo";
+
+    const fields = document.createElement("div");
+    fields.classList.add("form-fields");
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.name = "flags.pmd.applyToTarget";
+    checkbox.setAttribute("data-dtype", "Boolean");
+
+    fields.appendChild(checkbox);
+
+    const notes = document.createElement("p");
+    notes.classList.add("notes");
+    notes.textContent = "Si está activo, este efecto se aplicará a la criatura objetivo al usar el movimiento.";
+
+    container.appendChild(label);
+    container.appendChild(fields);
+    container.appendChild(notes);
+
+    const targetTab = form.querySelector(".tab[data-tab='effects']") ?? form.querySelector(".sheet-body") ?? form;
+    targetTab.appendChild(container);
+  }
+
+  const checkbox = container.querySelector("input[name='flags.pmd.applyToTarget']");
+  if (checkbox) {
+    checkbox.checked = !!isChecked;
+  }
+}
+
 function observeChanges(sheet, root) {
   if (!root || !sheet) return;
   if (sheet._pmdEffectObserver) {
@@ -72,6 +152,7 @@ function observeChanges(sheet, root) {
 
   const observer = new MutationObserver(() => {
     applyAttributeSelects(root);
+    ensureTargetToggle(sheet, root);
   });
 
   observer.observe(root, { childList: true, subtree: true });
@@ -83,6 +164,7 @@ export function setupActiveEffectUI() {
     const element = findRootElement(html);
     if (!element) return;
     applyAttributeSelects(element);
+    ensureTargetToggle(sheet, element);
     observeChanges(sheet, element);
   });
 

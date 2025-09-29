@@ -541,10 +541,69 @@ export class MyActorSheet extends BaseActorSheet {
     const rng  = item.system?.range ?? "";
     const effTxt = item.system?.effect ?? "";
     const baseDmg = Number(item.system?.baseDamage ?? 0);
+    const itemUuid = item.uuid ?? null;
 
     const targets = Array.from(game.user?.targets ?? []);
     const target = targets[0]?.actor ?? null;
     const canCalc = !!target && isHit && cat !== "status";
+
+    const shouldApplyTargetEffects = !!target && isHit;
+    const targetEffects = [];
+    const appliedEffectNames = [];
+
+    if (shouldApplyTargetEffects) {
+      for (const effect of item.effects?.contents ?? []) {
+        if (!effect) continue;
+        const applyToTarget = effect?.getFlag?.("pmd", "applyToTarget") ?? effect?.flags?.pmd?.applyToTarget;
+        if (!applyToTarget) continue;
+        const source = effect._source ?? {};
+        if (source.disabled === true) continue;
+        const data = typeof effect.toObject === "function" ? effect.toObject() : effect;
+        if (!data) continue;
+        let clone;
+        if (foundry?.utils?.duplicate) {
+          clone = foundry.utils.duplicate(data);
+        } else if (typeof structuredClone === "function") {
+          clone = structuredClone(data);
+        } else {
+          try {
+            clone = JSON.parse(JSON.stringify(data));
+          } catch (err) {
+            clone = { ...data };
+          }
+        }
+        if (!clone) continue;
+        delete clone._id;
+        clone.origin = clone.origin || itemUuid;
+        clone.transfer = false;
+        clone.disabled = false;
+        if (clone.duration) {
+          delete clone.duration.startTime;
+          delete clone.duration.startRound;
+          delete clone.duration.startTurn;
+          delete clone.duration.combat;
+        }
+        if (clone.flags?.pmd) {
+          if ("applyToTarget" in clone.flags.pmd) {
+            delete clone.flags.pmd.applyToTarget;
+          }
+          if (Object.keys(clone.flags.pmd).length === 0) {
+            delete clone.flags.pmd;
+          }
+          if (clone.flags && Object.keys(clone.flags).length === 0) {
+            delete clone.flags;
+          }
+        }
+        if (!clone.name && item.name) {
+          clone.name = item.name;
+        }
+        targetEffects.push(clone);
+        const effectName = clone.name ?? effect.name;
+        if (effectName) {
+          appliedEffectNames.push(foundry.utils.escapeHTML(effectName));
+        }
+      }
+    }
 
     let dmgBreakdownHTML = "";
 
@@ -624,9 +683,14 @@ export class MyActorSheet extends BaseActorSheet {
       <div>Chequeo: ${isHit ? '<span class="roll-success">ACIERTO</span>' : '<span class="roll-failure">FALLO</span>'} ${isCrit ? '· <b>CRÍTICO</b>' : ''}</div>
       ${effTxt ? `<hr/><div><em>Efecto:</em> ${effTxt}</div>` : ""}
       ${dmgBreakdownHTML}
+      ${targetEffects.length && target ? `<hr/><div><em>Efectos aplicados a ${foundry.utils.escapeHTML(target.name ?? "objetivo")}:</em> ${appliedEffectNames.join(", ")}</div>` : ""}
     `;
 
     await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor: this.actor }), flavor });
+
+    if (target && targetEffects.length) {
+      await target.createEmbeddedDocuments("ActiveEffect", targetEffects);
+    }
   }
 
   _formatText(text) {
