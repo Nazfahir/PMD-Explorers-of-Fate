@@ -43,6 +43,7 @@ function serializeEffect(effect) {
   const changes = Array.isArray(effect.changes)
     ? effect.changes.map(mapChange)
     : [];
+  const applyToTarget = effect?.getFlag?.("pmd", "applyToTarget") ?? effect?.flags?.pmd?.applyToTarget ?? false;
   return {
     id: effect.id,
     name: effect.name ?? "Efecto",
@@ -51,7 +52,8 @@ function serializeEffect(effect) {
     isSuppressed: !!effect.isSuppressed,
     origin: effect.origin ?? "",
     durationLabel,
-    changes
+    changes,
+    applyToTarget: !!applyToTarget
   };
 }
 
