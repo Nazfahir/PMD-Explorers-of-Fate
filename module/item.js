@@ -111,7 +111,7 @@ export class PMDItem extends Item {
         effect.disabled = baseDisabled || !isEquipped;
         effect.transfer = baseTransfer && isEquipped;
       }
-    } else if (this.type === "consumable") {
+    } else if (this.type === "consumable" || this.type === "move") {
       for (const effect of effects) {
         if (!effect) continue;
         effect.disabled = true;
