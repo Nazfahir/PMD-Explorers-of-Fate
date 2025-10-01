@@ -14,6 +14,8 @@
         "stab": 0,
         "basicattack": 0,
         "accuracyBonus": 0,
+        "critAttackMod": 0,
+        "critDefenseMod": 0,
         "lp": 0,
         "belly": 100,
         "pasiva": "",

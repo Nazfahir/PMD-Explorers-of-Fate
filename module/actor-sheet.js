@@ -157,6 +157,7 @@ export class MyActorSheet extends BaseActorSheet {
     ];
 
     data.activeEffects = mapActiveEffects(this.actor);
+    data.isGM = game?.user?.isGM ?? false;
 
     return data;
   }
@@ -529,7 +530,14 @@ export class MyActorSheet extends BaseActorSheet {
     // Tirada d100
     const roll = await (new Roll("1d100")).evaluate({ async: true });
     const raw = roll.total;
-    const isCrit = raw < 10;
+    const targets = Array.from(game.user?.targets ?? []);
+    const defender = targets[0]?.actor ?? null;
+    const baseCritThreshold = 10;
+    const attackCritMod = Number(this.actor.system?.critAttackMod ?? 0);
+    const defenderCritMod = defender ? Number(defender.system?.critDefenseMod ?? 0) : null;
+    const critModifier = Number.isFinite(defenderCritMod) ? defenderCritMod : attackCritMod;
+    const critThreshold = baseCritThreshold + critModifier;
+    const isCrit = raw < critThreshold;
     const isHit = raw < finalThreshold;
 
     // Gastar PP
@@ -541,8 +549,6 @@ export class MyActorSheet extends BaseActorSheet {
     const rng  = item.system?.range ?? "";
     const effTxt = item.system?.effect ?? "";
     const baseDmg = Number(item.system?.baseDamage ?? 0);
-
-    const targets = Array.from(game.user?.targets ?? []);
     const target = targets[0]?.actor ?? null;
     const canCalc = !!target && isHit && cat !== "status";
 

@@ -1,57 +1,56 @@
 <form class="{{cssClass}} my-sheet" autocomplete="off">
   <!-- ===== Encabezado ===== -->
   <header class="sheet-header flexrow">
-    <div class="header-fields">
-      <label>Nombre</label>
-      <input type="text" name="name" value="{{actor.name}}" />
+    <div class="header-fields grid two-col">
+      <div>
+        <label>Nombre</label>
+        <input type="text" name="name" value="{{actor.name}}" />
+      </div>
+      <div>
+        <label>Especie</label>
+        <input type="text" name="system.species" value="{{system.species}}" />
+      </div>
+      <div>
+        <label>Nivel</label>
+        <input type="number" name="system.lvl" value="{{system.lvl}}" data-dtype="Number"/>
+      </div>
+      <div>
+        <label>Pasiva</label>
+        <input type="text" name="system.pasiva" value="{{system.pasiva}}" />
+      </div>
+      <div>
+        <label>Destino</label>
+        <input type="text" name="system.destino" value="{{system.destino}}" />
+      </div>
+      <div>
+        <label>Leyenda</label>
+        <input type="text" name="system.leyenda" value="{{system.leyenda}}" />
+      </div>
+      <div>
+        <label>Background</label>
+        <input type="text" name="system.background" value="{{system.background}}" />
+      </div>
+      <div>
+        <label>Velocidad</label>
+        <input type="number" name="system.speed" value="{{system.speed}}" data-dtype="Number"/>
+      </div>
 
-      <div class="grid two-col">
-        <div>
-          <label>Especie</label>
-          <input type="text" name="system.species" value="{{system.species}}" />
-        </div>
-        <div>
-          <label>Nivel</label>
-          <input type="number" name="system.lvl" value="{{system.lvl}}" data-dtype="Number"/>
-        </div>
-        <div>
-          <label>Pasiva</label>
-          <input type="text" name="system.pasiva" value="{{system.pasiva}}" />
-        </div>
-        <div>
-          <label>Destino</label>
-          <input type="text" name="system.destino" value="{{system.destino}}" />
-        </div>
-        <div>
-          <label>Leyenda</label>
-          <input type="text" name="system.leyenda" value="{{system.leyenda}}" />
-        </div>
-        <div>
-          <label>Background</label>
-          <input type="text" name="system.background" value="{{system.background}}" />
-        </div>
-        <div>
-          <label>Velocidad</label>
-          <input type="number" name="system.speed" value="{{system.speed}}" data-dtype="Number"/>
-        </div>
-
-        <!-- Nuevos campos: Tipo 1 y Tipo 2 -->
-        <div>
-          <label>Tipo 1</label>
-          <select name="system.type1">
-            {{#each typeOptions as |option idx|}}
-              <option value="{{option.value}}" {{#if (eq idx ../typeIndices.type1)}}selected{{/if}}>{{option.label}}</option>
-            {{/each}}
-          </select>
-        </div>
-        <div>
-          <label>Tipo 2</label>
-          <select name="system.type2">
-            {{#each typeOptions as |option idx|}}
-              <option value="{{option.value}}" {{#if (eq idx ../typeIndices.type2)}}selected{{/if}}>{{option.label}}</option>
-            {{/each}}
-          </select>
-        </div>
+      <!-- Nuevos campos: Tipo 1 y Tipo 2 -->
+      <div>
+        <label>Tipo 1</label>
+        <select name="system.type1">
+          {{#each typeOptions as |option idx|}}
+            <option value="{{option.value}}" {{#if (eq idx ../typeIndices.type1)}}selected{{/if}}>{{option.label}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <div>
+        <label>Tipo 2</label>
+        <select name="system.type2">
+          {{#each typeOptions as |option idx|}}
+            <option value="{{option.value}}" {{#if (eq idx ../typeIndices.type2)}}selected{{/if}}>{{option.label}}</option>
+          {{/each}}
+        </select>
       </div>
     </div>
   </header>
@@ -64,6 +63,9 @@
     <a class="item" data-tab="traits">Rasgos</a>
     <a class="item" data-tab="inventory">Objetos</a>
     <a class="item" data-tab="effects">Efectos</a>
+    {{#if isGM}}
+      <a class="item" data-tab="gm">GM</a>
+    {{/if}}
   </nav>
 
   <section class="sheet-body">
@@ -120,11 +122,6 @@
         </div>
 
         <div class="stat">
-          <label>Precisión Global</label>
-          <input type="number" name="system.accuracyBonus" value="{{system.accuracyBonus}}" data-dtype="Number"/>
-        </div>
-
-        <div class="stat">
           <label>LP</label>
           <input type="number" name="system.lp" value="{{system.lp}}" data-dtype="Number"/>
         </div>
@@ -135,6 +132,25 @@
         </div>
       </div>
     </div>
+
+    {{#if isGM}}
+      <div class="tab" data-tab="gm" data-group="primary">
+        <div class="grid two-col">
+          <div class="stat">
+            <label>Precisión Global</label>
+            <input type="number" name="system.accuracyBonus" value="{{system.accuracyBonus}}" data-dtype="Number"/>
+          </div>
+          <div class="stat">
+            <label>Mod. Crítico (Ataques)</label>
+            <input type="number" name="system.critAttackMod" value="{{system.critAttackMod}}" data-dtype="Number"/>
+          </div>
+          <div class="stat">
+            <label>Mod. Crítico (Defensa)</label>
+            <input type="number" name="system.critDefenseMod" value="{{system.critDefenseMod}}" data-dtype="Number"/>
+          </div>
+        </div>
+      </div>
+    {{/if}}
 
     <!-- ===== TAB: Habilidades ===== -->
     <div class="tab" data-tab="skills" data-group="primary">
