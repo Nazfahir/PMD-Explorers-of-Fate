@@ -561,6 +561,7 @@ export class MyActorSheet extends BaseActorSheet {
     const canCalc = !!target && isHit && cat !== "status";
 
     let dmgBreakdownHTML = "";
+    let finalDamageValue = null;
 
     if (canCalc) {
       const hasStab = this._moveHasStab(elem);
@@ -594,12 +595,27 @@ export class MyActorSheet extends BaseActorSheet {
         }
 
         const finalDamage = isImmune ? 0 : Math.max(1, Math.ceil(dmg));
+        finalDamageValue = finalDamage;
         const defLine = isImmune
           ? `<div>− ${defKey}: <em>No aplica</em></div>`
           : `<div>− ${defKey}: <b>${defStat}</b></div>`;
         const finalNote = isImmune
           ? "<small>(objetivo inmune)</small>"
           : "<small>(redondeo ↑, mínimo 1)</small>";
+
+        const targetUuid = target?.uuid ?? "";
+        const safeTargetUuid = targetUuid ? foundry.utils.escapeHTML(targetUuid) : "";
+        const safeTargetName = foundry.utils.escapeHTML(target?.name ?? "Objetivo");
+
+        const applyButtonHtml = finalDamageValue !== null && safeTargetUuid
+          ? `
+          <div class="pmd-damage-actions">
+            <button type="button" data-action="apply-move-damage" data-damage="${finalDamageValue}" data-target-uuid="${safeTargetUuid}">
+              Aplicar ${finalDamageValue} de daño a ${safeTargetName}
+            </button>
+          </div>
+        `
+          : "";
 
         dmgBreakdownHTML = `
           <hr/>
@@ -614,6 +630,7 @@ export class MyActorSheet extends BaseActorSheet {
           <div>Enemigo: ${opts.enemy.op} ${opts.enemy.val}</div>
           ${defLine}
           <div><b>Daño final: ${finalDamage}</b> ${finalNote}</div>
+          ${applyButtonHtml}
         `;
       }
     }
