@@ -106,3 +106,73 @@ Hooks.on("updateCombat", async (combat, changed) => {
     await refreshInitiativesFromSpeed(combat);
   }
 });
+
+Hooks.on("renderChatMessage", (message, html) => {
+  const root = html?.[0] ?? html;
+  const element = root instanceof HTMLElement ? root : null;
+  if (!element) return;
+
+  element.querySelectorAll("[data-action='apply-move-damage']").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      const btn = event.currentTarget;
+      if (!(btn instanceof HTMLButtonElement)) return;
+
+      const damage = Number(btn.dataset.damage ?? 0);
+      const targetUuid = btn.dataset.targetUuid ?? "";
+
+      if (!targetUuid || !Number.isFinite(damage)) return;
+
+      btn.disabled = true;
+
+      const actor = await fromUuid(targetUuid);
+      if (!(actor instanceof Actor)) {
+        btn.disabled = false;
+        ui.notifications?.warn("No se encontró el objetivo para aplicar daño.");
+        return;
+      }
+
+      if (!actor.isOwner) {
+        btn.disabled = false;
+        ui.notifications?.warn("No tienes permisos para modificar a ese objetivo.");
+        return;
+      }
+
+      const getProperty =
+        foundry?.utils?.getProperty ??
+        ((object, path) => {
+          if (!object || typeof path !== "string") return undefined;
+          return path
+            .split(".")
+            .reduce((value, part) => (value && typeof value === "object" ? value[part] : undefined), object);
+        });
+
+      const currentHp = Number(getProperty(actor, "system.hp.value"));
+      if (!Number.isFinite(currentHp)) {
+        btn.disabled = false;
+        ui.notifications?.warn("No se pudo determinar el HP del objetivo.");
+        return;
+      }
+
+      const newHp = Math.max(0, currentHp - damage);
+
+      try {
+        await actor.update({ "system.hp.value": newHp });
+      } catch (err) {
+        console.error(err);
+        btn.disabled = false;
+        ui.notifications?.error("No se pudo aplicar el daño.");
+        return;
+      }
+
+      const actorName = foundry.utils.escapeHTML(actor.name ?? "Objetivo");
+
+      if (currentHp > 0 && newHp === 0) {
+        await ChatMessage.create({
+          speaker: ChatMessage.getSpeaker({ actor }),
+          content: `<div><strong>${actorName}</strong> fue debilitado.</div>`
+        });
+      }
+    });
+  });
+});
