@@ -487,6 +487,16 @@ export class MyActorSheet extends BaseActorSheet {
     ].filter((value) => !!value);
   }
 
+  _getFirstTargetActor() {
+    const targets = game?.user?.targets;
+    if (!targets || targets.size === 0) return null;
+    for (const token of targets) {
+      const actor = token?.actor ?? token?.document?.actor ?? null;
+      if (actor) return actor;
+    }
+    return null;
+  }
+
   _moveHasStab(moveType) {
     const normalizedMove = normalizeTypeValue(moveType);
     if (!normalizedMove) return false;
@@ -530,13 +540,11 @@ export class MyActorSheet extends BaseActorSheet {
     // Tirada d100
     const roll = await (new Roll("1d100")).evaluate({ async: true });
     const raw = roll.total;
-    const targets = Array.from(game.user?.targets ?? []);
-    const defender = targets[0]?.actor ?? null;
+    const targetActor = this._getFirstTargetActor();
     const baseCritThreshold = 10;
     const attackCritMod = Number(this.actor.system?.critAttackMod ?? 0);
-    const defenderCritMod = defender ? Number(defender.system?.critDefenseMod ?? 0) : null;
-    const critModifier = Number.isFinite(defenderCritMod) ? defenderCritMod : attackCritMod;
-    const critThreshold = baseCritThreshold + critModifier;
+    const defenderCritMod = targetActor ? Number(targetActor.system?.critDefenseMod ?? 0) : 0;
+    const critThreshold = baseCritThreshold + attackCritMod + defenderCritMod;
     const isCrit = raw < critThreshold;
     const isHit = raw < finalThreshold;
 
@@ -549,7 +557,7 @@ export class MyActorSheet extends BaseActorSheet {
     const rng  = item.system?.range ?? "";
     const effTxt = item.system?.effect ?? "";
     const baseDmg = Number(item.system?.baseDamage ?? 0);
-    const target = targets[0]?.actor ?? null;
+    const target = targetActor;
     const canCalc = !!target && isHit && cat !== "status";
 
     let dmgBreakdownHTML = "";
