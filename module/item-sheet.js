@@ -2,6 +2,7 @@
 import { TYPE_OPTIONS } from "./pokemon-types.js";
 import { mapActiveEffects, bindEffectControls } from "./effect-helpers.js";
 import { CONSUMABLE_PERMANENT_ATTRIBUTE_OPTIONS } from "./consumable-effects.js";
+import { MOVE_DIE_OPTIONS } from "./constants.js";
 const BaseItemSheet =
   foundry?.appv1?.sheets?.ItemSheet ??
   foundry?.applications?.sheets?.ItemSheet ??
@@ -100,6 +101,7 @@ export class PMDItemSheet extends BaseItemSheet {
     data.typeOptions = TYPE_OPTIONS;
     data.activeEffects = mapActiveEffects(this.item);
     data.consumablePermanentAttributes = CONSUMABLE_PERMANENT_ATTRIBUTE_OPTIONS;
+    data.moveDieOptions = MOVE_DIE_OPTIONS;
     return data;
   }
 
@@ -114,5 +116,22 @@ export class PMDItemSheet extends BaseItemSheet {
     if (!root) return;
 
     bindEffectControls(root, this.item, "item");
+
+    root.querySelectorAll("input[data-toggle-target]").forEach((input) => {
+      if (!(input instanceof HTMLInputElement)) return;
+      const selector = input.dataset.toggleTarget ?? "";
+      if (!selector) return;
+      const targets = root.querySelectorAll(selector);
+      const updateVisibility = () => {
+        const display = input.checked ? "" : "none";
+        targets.forEach((element) => {
+          if (element instanceof HTMLElement) {
+            element.style.display = display;
+          }
+        });
+      };
+      input.addEventListener("change", updateVisibility);
+      updateVisibility();
+    });
   }
 }

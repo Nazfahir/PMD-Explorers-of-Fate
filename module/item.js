@@ -1,6 +1,15 @@
 // module/item.js
 import { normalizeTypeValue } from "./pokemon-types.js";
 import { CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG } from "./consumable-effects.js";
+import { MOVE_DIE_OPTIONS } from "./constants.js";
+
+const MOVE_DIE_SET = new Set(MOVE_DIE_OPTIONS);
+
+function sanitizeMoveDie(value, fallback) {
+  const die = String(value ?? "").toLowerCase();
+  if (MOVE_DIE_SET.has(die)) return die;
+  return fallback;
+}
 export class PMDItem extends Item {
   /** @override */
   prepareBaseData() {
@@ -20,6 +29,7 @@ export class PMDItem extends Item {
 
         sys.accuracy = num(sys.accuracy, 75);
         sys.baseDamage = Math.max(0, num(sys.baseDamage, 10));
+        sys.critThresholdMod = num(sys.critThresholdMod, 0);
 
         if (!["physical", "special", "status"].includes(sys.category)) {
           sys.category = "physical";
@@ -28,6 +38,32 @@ export class PMDItem extends Item {
         sys.range   = String(sys.range ?? "");
         sys.element = normalizeTypeValue(sys.element);
         sys.effect  = String(sys.effect ?? "");
+
+        const extraRolls =
+          typeof sys.extraRolls === "object" && !Array.isArray(sys.extraRolls)
+            ? sys.extraRolls
+            : {};
+        const extraEnabled = !!extraRolls.enabled;
+        const extraQuantity = Math.max(0, Math.round(num(extraRolls.quantity, 0)));
+        const extraDie = sanitizeMoveDie(extraRolls.die, "d6");
+        const extraMessage = String(extraRolls.message ?? "");
+        sys.extraRolls = {
+          enabled: extraEnabled,
+          quantity: extraQuantity,
+          die: extraDie,
+          message: extraMessage,
+        };
+
+        const multiAttack =
+          typeof sys.multiAttack === "object" && !Array.isArray(sys.multiAttack)
+            ? sys.multiAttack
+            : {};
+        const multiEnabled = !!multiAttack.enabled;
+        const multiDie = sanitizeMoveDie(multiAttack.die, "d4");
+        sys.multiAttack = {
+          enabled: multiEnabled,
+          die: multiDie,
+        };
         break;
       }
 
