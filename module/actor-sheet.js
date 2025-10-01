@@ -544,7 +544,8 @@ export class MyActorSheet extends BaseActorSheet {
     const baseCritThreshold = 10;
     const attackCritMod = Number(this.actor.system?.critAttackMod ?? 0);
     const defenderCritMod = targetActor ? Number(targetActor.system?.critDefenseMod ?? 0) : 0;
-    const critThreshold = baseCritThreshold + attackCritMod + defenderCritMod;
+    const moveCritMod = Number(item.system?.critThresholdMod ?? 0);
+    const critThreshold = baseCritThreshold + attackCritMod + defenderCritMod + moveCritMod;
     const isCrit = raw < critThreshold;
     const isHit = raw < finalThreshold;
 
@@ -558,23 +559,30 @@ export class MyActorSheet extends BaseActorSheet {
     const effTxt = item.system?.effect ?? "";
     const baseDmg = Number(item.system?.baseDamage ?? 0);
     const target = targetActor;
-    const canCalc = !!target && isHit && cat !== "status";
+    const targetUuid = target?.uuid ?? "";
+    const safeTargetUuid = targetUuid ? foundry.utils.escapeHTML(targetUuid) : "";
+    const safeTargetName = target ? foundry.utils.escapeHTML(target?.name ?? "Objetivo") : "";
+    const canCalcBaseDamage = !!target && isHit && cat !== "status";
+    const canCalcMultiDamage = !!target && cat !== "status";
+
+    const defenderTypes = this._getTargetTypes(target);
+    const normalizedMove = normalizeTypeValue(elem);
+    const autoEffect = normalizedMove && defenderTypes.length > 0
+      ? calculateTypeEffectiveness(normalizedMove, defenderTypes)
+      : null;
+    const autoEffectiveness = Number.isFinite(autoEffect?.multiplier) ? autoEffect.multiplier : null;
 
     let dmgBreakdownHTML = "";
     let finalDamageValue = null;
+    let isImmune = false;
 
-    if (canCalc) {
+    if (canCalcBaseDamage) {
       const hasStab = this._moveHasStab(elem);
-      const defenderTypes = this._getTargetTypes(target);
-      const normalizedMove = normalizeTypeValue(elem);
-      const autoEffect = normalizedMove && defenderTypes.length > 0
-        ? calculateTypeEffectiveness(normalizedMove, defenderTypes)
-        : null;
       const opts = await this._promptDamageOptions({
         itemName: item.name,
         isCrit,
         hasStab,
-        effectiveness: autoEffect?.multiplier,
+        effectiveness: autoEffectiveness,
         autoCalculated: !!autoEffect
       });
       if (opts) {
@@ -584,7 +592,7 @@ export class MyActorSheet extends BaseActorSheet {
         dmg = this._applyOp(dmg, opts.stat.op, opts.stat.val);
         dmg = this._applyOp(dmg, opts.ability.op, opts.ability.val);
         if (opts.stab) dmg += Number(this.actor.system?.stab ?? 0);
-        const isImmune = opts.effectiveness === 0;
+        isImmune = opts.effectiveness === 0;
         if (!isImmune) {
           dmg *= opts.effectiveness;
           if (isCrit) dmg *= 1.5;
@@ -602,25 +610,12 @@ export class MyActorSheet extends BaseActorSheet {
         const finalNote = isImmune
           ? "<small>(objetivo inmune)</small>"
           : "<small>(redondeo ↑, mínimo 1)</small>";
-
-        const targetUuid = target?.uuid ?? "";
-        const safeTargetUuid = targetUuid ? foundry.utils.escapeHTML(targetUuid) : "";
-        const safeTargetName = foundry.utils.escapeHTML(target?.name ?? "Objetivo");
-
-        const applyButtonHtml = finalDamageValue !== null && safeTargetUuid
-          ? `
-          <div class="pmd-damage-actions">
-            <button type="button" data-action="apply-move-damage" data-damage="${finalDamageValue}" data-target-uuid="${safeTargetUuid}">
-              Aplicar ${finalDamageValue} de daño a ${safeTargetName}
-            </button>
-          </div>
-        `
-          : "";
+        const basePlusStat = baseDmg + atkStat;
 
         dmgBreakdownHTML = `
           <hr/>
           <div><b>Cálculo de Daño</b></div>
-          <div>Base (${baseDmg}) + ${atkKey}: <b>${baseDmg + atkStat}</b></div>
+          <div>Base (${baseDmg}) + ${atkKey}: <b>${basePlusStat}</b></div>
           <div>Bonif. Estadística: ${opts.stat.op} ${opts.stat.val}</div>
           <div>Bonif. Habilidad: ${opts.ability.op} ${opts.ability.val}${opts.stab ? ` + STAB (${this.actor.system?.stab ?? 0})` : ""}</div>
           <div>Efectividad: ×${opts.effectiveness}</div>
@@ -630,31 +625,140 @@ export class MyActorSheet extends BaseActorSheet {
           <div>Enemigo: ${opts.enemy.op} ${opts.enemy.val}</div>
           ${defLine}
           <div><b>Daño final: ${finalDamage}</b> ${finalNote}</div>
-          ${applyButtonHtml}
+        `;
+      } else if (autoEffectiveness === 0) {
+        isImmune = true;
+      }
+    } else if (autoEffectiveness === 0) {
+      isImmune = true;
+    }
+
+    const sanitizeDie = (value) => {
+      const die = String(value ?? "").toLowerCase();
+      return /^d\d+$/.test(die) ? die : null;
+    };
+
+    let extraRollHTML = "";
+    const extraRolls =
+      typeof item.system?.extraRolls === "object" && !Array.isArray(item.system.extraRolls)
+        ? item.system.extraRolls
+        : null;
+    if (extraRolls?.enabled) {
+      const quantity = Math.max(0, Math.round(Number(extraRolls.quantity ?? 0)));
+      const die = sanitizeDie(extraRolls.die);
+      if (quantity > 0 && die) {
+        const formula = `${quantity}${die}`;
+        const extraRoll = await (new Roll(formula)).evaluate({ async: true });
+        const extraMessage = foundry.utils.escapeHTML(String(extraRolls.message ?? ""));
+        const extraRollRendered = await extraRoll.render();
+        const safeFormula = foundry.utils.escapeHTML(formula);
+        extraRollHTML = `
+          <hr/>
+          <div><strong>Tiradas adicionales (${safeFormula})</strong></div>
+          ${extraMessage ? `<div>${extraMessage}</div>` : ""}
+          ${extraRollRendered}
         `;
       }
     }
 
-    // Mensaje en chat
+    let multiAttackHTML = "";
+    let multiDamageTotal = 0;
+    const multiAttack =
+      typeof item.system?.multiAttack === "object" && !Array.isArray(item.system.multiAttack)
+        ? item.system.multiAttack
+        : null;
+    if (multiAttack?.enabled) {
+      const die = sanitizeDie(multiAttack.die);
+      if (die) {
+        const dieFormula = `1${die}`;
+        const multiRoll = await (new Roll(dieFormula)).evaluate({ async: true });
+        const additionalAttacks = Math.max(0, Math.floor(Number(multiRoll.total ?? 0)));
+        const entries = [];
+        for (let i = 0; i < additionalAttacks; i++) {
+          const accRoll = await (new Roll("1d100")).evaluate({ async: true });
+          const total = accRoll.total;
+          const hit = total < finalThreshold;
+          const critExtra = total < critThreshold;
+          const damage = hit && canCalcMultiDamage && !isImmune && baseDmg > 0 ? baseDmg : 0;
+          if (damage > 0) {
+            multiDamageTotal += damage;
+          }
+          entries.push({ roll: accRoll, hit, crit: critExtra, damage });
+        }
+        const multiRollHTML = await multiRoll.render();
+        const entriesHTML = entries.length
+          ? entries
+              .map((entry, index) => {
+                const rollValue = foundry.utils.escapeHTML(String(entry.roll.total ?? "-"));
+                const hitText = entry.hit
+                  ? `<span class="roll-success">ACIERTO${entry.crit ? " · CRÍTICO" : ""}</span>`
+                  : '<span class="roll-failure">FALLO</span>';
+                const damageText = entry.hit
+                  ? entry.damage > 0
+                    ? ` · Daño base: <b>${entry.damage}</b>`
+                    : " · Sin daño adicional"
+                  : "";
+                return `<div>Ataque adicional ${index + 1}: d100 = <b>${rollValue}</b> → ${hitText}${damageText}</div>`;
+              })
+              .join("")
+          : "<div>Sin ataques adicionales.</div>";
+        const totalLine = multiDamageTotal > 0 ? `<div><b>Daño adicional total: ${multiDamageTotal}</b></div>` : "";
+        const countLine = `<div>Ataques adicionales: <b>${additionalAttacks}</b></div>`;
+        const safeDieFormula = foundry.utils.escapeHTML(dieFormula);
+        multiAttackHTML = `
+          <hr/>
+          <div><strong>Multiataque (${safeDieFormula})</strong></div>
+          ${countLine}
+          ${multiRollHTML}
+          ${entriesHTML}
+          ${totalLine}
+        `;
+      }
+    }
+
+    let applyButtonHtml = "";
+    if (safeTargetUuid) {
+      const baseComponent = Number.isFinite(finalDamageValue) ? finalDamageValue : null;
+      const totalDamage = (baseComponent ?? 0) + multiDamageTotal;
+      if (totalDamage > 0) {
+        const breakdownParts = [];
+        if (baseComponent !== null) breakdownParts.push(`${baseComponent} base`);
+        if (multiDamageTotal > 0) breakdownParts.push(`${multiDamageTotal} multiataque`);
+        const breakdownHtml = breakdownParts.length > 1 ? `<div><small>Desglose: ${breakdownParts.join(" + ")}</small></div>` : "";
+        applyButtonHtml = `
+          <div class="pmd-damage-actions">
+            <button type="button" data-action="apply-move-damage" data-damage="${totalDamage}" data-target-uuid="${safeTargetUuid}">
+              Aplicar ${totalDamage} de daño a ${safeTargetName}
+            </button>
+            ${breakdownHtml}
+          </div>
+        `;
+      }
+    }
+
+    const accuracyNotesParts = [];
+    if (globalAccBonus) {
+      accuracyNotesParts.push(`bono global ${globalAccBonus > 0 ? "+" : ""}${globalAccBonus}`);
+    }
+    if (accBonus) {
+      accuracyNotesParts.push(`bono situacional ${accBonus > 0 ? "+" : ""}${accBonus}`);
+    }
+    const accuracyNotes = accuracyNotesParts.length ? `(${accuracyNotesParts.join(" · ")})` : "";
+
     const flavor = `
       <div><strong>Usa Movimiento:</strong> ${foundry.utils.escapeHTML(item.name)}</div>
       <div><small>${elem ? `Tipo: ${elem} · ` : ""}${cat ? `Categoría: ${cat}` : ""}${rng ? ` · Rango: ${rng}` : ""}</small></div>
       <hr/>
-      <div>Precisión base: <b>${baseAcc}</b> ${(() => {
-        const parts = [];
-        if (globalAccBonus) {
-          parts.push(`bono global ${globalAccBonus > 0 ? "+" : ""}${globalAccBonus}`);
-        }
-        if (accBonus) {
-          parts.push(`bono situacional ${accBonus > 0 ? "+" : ""}${accBonus}`);
-        }
-        return parts.length ? `(${parts.join(' · ')})` : "";
-      })()}</div>
+      <div>Precisión base: <b>${baseAcc}</b> ${accuracyNotes}</div>
       <div>Umbral final: <b>${finalThreshold}</b></div>
+      <div>Umbral crítico: <b>${critThreshold}</b></div>
       <div>d100: <b>${raw}</b></div>
       <div>Chequeo: ${isHit ? '<span class="roll-success">ACIERTO</span>' : '<span class="roll-failure">FALLO</span>'} ${isCrit ? '· <b>CRÍTICO</b>' : ''}</div>
       ${effTxt ? `<hr/><div><em>Efecto:</em> ${effTxt}</div>` : ""}
       ${dmgBreakdownHTML}
+      ${extraRollHTML}
+      ${multiAttackHTML}
+      ${applyButtonHtml}
     `;
 
     await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor: this.actor }), flavor });

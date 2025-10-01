@@ -8,6 +8,7 @@
 
   <nav class="sheet-tabs tabs" data-group="primary">
     <a class="item" data-tab="details">Detalles</a>
+    <a class="item" data-tab="mechanics">Mecánicas</a>
     <a class="item" data-tab="text">Texto</a>
     <a class="item" data-tab="effects">Efectos</a>
   </nav>
@@ -53,6 +54,59 @@
           <label>Daño base</label>
           <input type="number" name="system.baseDamage" value="{{system.baseDamage}}" data-dtype="Number" min="0"/>
         </div>
+      </div>
+    </div>
+
+    <div class="tab" data-tab="mechanics" data-group="primary">
+      <div class="grid two-col">
+        <div class="field">
+          <label>Mod. umbral crítico</label>
+          <input type="number" name="system.critThresholdMod" value="{{system.critThresholdMod}}" data-dtype="Number"/>
+        </div>
+        <div class="field">
+          <label>
+            <input type="checkbox" name="system.extraRolls.enabled" {{#if system.extraRolls.enabled}}checked{{/if}} data-toggle-target="[data-extra-rolls-settings]"/>
+            Tiradas adicionales
+          </label>
+        </div>
+      </div>
+
+      <div class="grid two-col" data-extra-rolls-settings style="{{#unless system.extraRolls.enabled}}display:none;{{/unless}}">
+        <div class="field">
+          <label>Cantidad de dados</label>
+          <input type="number" name="system.extraRolls.quantity" value="{{system.extraRolls.quantity}}" data-dtype="Number" min="0"/>
+        </div>
+        <div class="field">
+          <label>Tipo de dado</label>
+          <select name="system.extraRolls.die">
+            {{#each moveDieOptions as |die|}}
+              <option value="{{die}}" {{#if (eq die ../system.extraRolls.die)}}selected{{/if}}>{{die}}</option>
+            {{/each}}
+          </select>
+        </div>
+      </div>
+
+      <div class="field" data-extra-rolls-settings style="{{#unless system.extraRolls.enabled}}display:none;{{/unless}}">
+        <label>Mensaje para el chat</label>
+        <input type="text" name="system.extraRolls.message" value="{{system.extraRolls.message}}"/>
+      </div>
+
+      <hr/>
+
+      <div class="field">
+        <label>
+          <input type="checkbox" name="system.multiAttack.enabled" {{#if system.multiAttack.enabled}}checked{{/if}} data-toggle-target="[data-multiattack-settings]"/>
+          Multiataque
+        </label>
+      </div>
+
+      <div class="field" data-multiattack-settings style="{{#unless system.multiAttack.enabled}}display:none;{{/unless}}">
+        <label>Dado de ataques adicionales</label>
+        <select name="system.multiAttack.die">
+          {{#each moveDieOptions as |die|}}
+            <option value="{{die}}" {{#if (eq die ../system.multiAttack.die)}}selected{{/if}}>{{die}}</option>
+          {{/each}}
+        </select>
       </div>
     </div>
 
