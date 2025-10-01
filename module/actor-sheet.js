@@ -674,6 +674,7 @@ export class MyActorSheet extends BaseActorSheet {
         const multiRoll = await (new Roll(dieFormula)).evaluate({ async: true });
         const additionalAttacks = Math.max(0, Math.floor(Number(multiRoll.total ?? 0)));
         const entries = [];
+        let stoppedEarly = false;
         for (let i = 0; i < additionalAttacks; i++) {
           const accRoll = await (new Roll("1d100")).evaluate({ async: true });
           const total = accRoll.total;
@@ -684,6 +685,10 @@ export class MyActorSheet extends BaseActorSheet {
             multiDamageTotal += damage;
           }
           entries.push({ roll: accRoll, hit, crit: critExtra, damage });
+          if (!hit) {
+            stoppedEarly = true;
+            break;
+          }
         }
         const multiRollHTML = await multiRoll.render();
         const entriesHTML = entries.length
@@ -704,6 +709,7 @@ export class MyActorSheet extends BaseActorSheet {
           : "<div>Sin ataques adicionales.</div>";
         const totalLine = multiDamageTotal > 0 ? `<div><b>Daño adicional total: ${multiDamageTotal}</b></div>` : "";
         const countLine = `<div>Ataques adicionales: <b>${additionalAttacks}</b></div>`;
+        const stoppedLine = stoppedEarly ? "<div>El multiataque se detuvo tras un fallo.</div>" : "";
         const safeDieFormula = foundry.utils.escapeHTML(dieFormula);
         multiAttackHTML = `
           <hr/>
@@ -711,6 +717,7 @@ export class MyActorSheet extends BaseActorSheet {
           ${countLine}
           ${multiRollHTML}
           ${entriesHTML}
+          ${stoppedLine}
           ${totalLine}
         `;
       }
