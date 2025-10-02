@@ -118,7 +118,10 @@
         </div>
         <div class="stat">
           <label>Basic Attack</label>
-          <input type="number" name="system.basicattack" value="{{system.basicattack}}" data-dtype="Number"/>
+          <div class="basic-attack-controls" style="display:flex; gap:6px; align-items:center;">
+            <input type="number" name="system.basicattack" value="{{system.basicattack}}" data-dtype="Number"/>
+            <button type="button" class="as-link" data-action="use-basic-attack">Atacar</button>
+          </div>
         </div>
 
         <div class="stat">
