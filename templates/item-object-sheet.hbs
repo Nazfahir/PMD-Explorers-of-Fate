@@ -12,6 +12,9 @@
     {{#if isConsumable}}
       <a class="item" data-tab="permanent">Efecto permanente</a>
     {{/if}}
+    {{#if isGM}}
+      <a class="item" data-tab="gm">Privado</a>
+    {{/if}}
     <a class="item" data-tab="effects">Efectos</a>
   </nav>
 
@@ -62,6 +65,35 @@
         </div>
       {{/if}}
     </div>
+
+    {{#if isGM}}
+      <div class="tab" data-tab="gm" data-group="primary">
+        <div class="field">
+          <label>¿Es trampa?</label>
+          <input
+            type="checkbox"
+            name="system.trap.enabled"
+            {{checked system.trap.enabled}}
+            data-toggle-target=".trap-details"
+          />
+        </div>
+
+        <div
+          class="field trap-details"
+          style="{{#unless system.trap.enabled}}display: none;{{/unless}}"
+        >
+          <label>Descripción oculta</label>
+          <textarea name="system.trap.description" rows="5">{{system.trap.description}}</textarea>
+        </div>
+
+        <p
+          class="notes trap-details"
+          style="{{#unless system.trap.enabled}}display: none;{{/unless}}"
+        >
+          Esta descripción reemplazará a la normal al usarse el objeto.
+        </p>
+      </div>
+    {{/if}}
 
     {{#if isConsumable}}
       <div class="tab" data-tab="permanent" data-group="primary">

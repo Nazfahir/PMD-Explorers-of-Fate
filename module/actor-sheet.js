@@ -786,7 +786,13 @@ export class MyActorSheet extends BaseActorSheet {
 
     const newQuantity = Math.max(0, quantity - 1);
     const itemUuid = item.uuid ?? null;
-    const effectText = this._formatText(item.system?.effect ?? "");
+    const trapData =
+      typeof item.system?.trap === "object" && !Array.isArray(item.system?.trap) ? item.system.trap : {};
+    const trapEnabled = trapData?.enabled === true;
+    const trapDescription = trapEnabled ? this._formatText(trapData?.description ?? "") : "";
+    const effectText = trapEnabled && trapDescription
+      ? trapDescription
+      : this._formatText(item.system?.effect ?? "");
     const itemName = foundry.utils.escapeHTML(item.name ?? "Objeto");
     const actorName = foundry.utils.escapeHTML(this.actor.name ?? "Personaje");
 
@@ -917,7 +923,13 @@ export class MyActorSheet extends BaseActorSheet {
   }
 
   async _useGearItem(item) {
-    const description = this._formatText(item.system?.description ?? "");
+    const trapData =
+      typeof item.system?.trap === "object" && !Array.isArray(item.system?.trap) ? item.system.trap : {};
+    const trapEnabled = trapData?.enabled === true;
+    const trapDescription = trapEnabled ? this._formatText(trapData?.description ?? "") : "";
+    const description = trapEnabled && trapDescription
+      ? trapDescription
+      : this._formatText(item.system?.description ?? "");
     const itemName = foundry.utils.escapeHTML(item.name ?? "Objeto");
     const actorName = foundry.utils.escapeHTML(this.actor.name ?? "Personaje");
 

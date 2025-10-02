@@ -97,6 +97,7 @@ export class PMDItemSheet extends BaseItemSheet {
     data.isConsumable = this.item.type === "consumable";
     data.isGear = this.item.type === "gear";
     data.isTrait = this.item.type === "trait";
+    data.isGM = game?.user?.isGM ?? false;
     data.itemType = this.item.type;
     data.typeOptions = TYPE_OPTIONS;
     data.activeEffects = mapActiveEffects(this.item);

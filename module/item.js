@@ -16,6 +16,17 @@ export class PMDItem extends Item {
     super.prepareBaseData();
     const sys = this.system;
 
+    const trapData =
+      typeof sys.trap === "object" && sys.trap !== null && !Array.isArray(sys.trap)
+        ? sys.trap
+        : {};
+    const trapEnabled = trapData.enabled === true;
+    const trapDescription = String(trapData.description ?? "");
+    sys.trap = {
+      enabled: trapEnabled,
+      description: trapDescription,
+    };
+
     const num = (v, d = 0) => {
       const n = Number(v);
       return Number.isFinite(n) ? n : d;
