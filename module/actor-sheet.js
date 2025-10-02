@@ -192,6 +192,10 @@ export class MyActorSheet extends BaseActorSheet {
       await this._restoreActorResources();
     });
 
+    addClick("[data-action='use-basic-attack']", async () => {
+      await this._useBasicAttack();
+    });
+
     // Movimientos
     addClick("[data-action='create-move']", async () => {
       const created = await this.actor.createEmbeddedDocuments("Item", [{
@@ -518,6 +522,97 @@ export class MyActorSheet extends BaseActorSheet {
       atkKey: "Atk",
       defKey: "Def"
     };
+  }
+
+  /* -------------------- Ataque Básico -------------------- */
+  async _useBasicAttack() {
+    const baseAcc = 75;
+    const accBonus = await this._promptAttackBonus("Ataque básico");
+    if (accBonus === null) return;
+
+    const globalAccBonus = Number(this.actor.system?.accuracyBonus ?? 0);
+    const finalThreshold = baseAcc + accBonus + globalAccBonus;
+
+    const roll = await (new Roll("1d100")).evaluate({ async: true });
+    const raw = roll.total;
+
+    const targetActor = this._getFirstTargetActor();
+    const baseCritThreshold = 10;
+    const attackCritMod = Number(this.actor.system?.critAttackMod ?? 0);
+    const defenderCritMod = targetActor ? Number(targetActor.system?.critDefenseMod ?? 0) : 0;
+    const critThreshold = baseCritThreshold + attackCritMod + defenderCritMod;
+    const isCrit = raw < critThreshold;
+    const isHit = raw < finalThreshold;
+
+    const baseDamageRaw = Number(this.actor.system?.basicattack ?? 0);
+    const attackStatRaw = Number(this.actor.system?.attack ?? 0);
+    const defenseStatRaw = targetActor ? Number(targetActor.system?.defense ?? 0) : 0;
+
+    const baseDamage = Number.isFinite(baseDamageRaw) ? baseDamageRaw : 0;
+    const attackStat = Number.isFinite(attackStatRaw) ? attackStatRaw : 0;
+    const defenseStat = Number.isFinite(defenseStatRaw) ? defenseStatRaw : 0;
+
+    let dmgBreakdownHTML = "";
+    let finalDamageValue = null;
+
+    if (isHit && targetActor) {
+      const basePlusAttack = baseDamage + attackStat;
+      let damage = basePlusAttack;
+      if (isCrit) damage *= 1.5;
+      damage -= defenseStat;
+      const finalDamage = Math.max(1, Math.ceil(damage));
+      finalDamageValue = finalDamage;
+      const defLine = `<div>− Def: <b>${defenseStat}</b></div>`;
+      const finalNote = "<small>(redondeo ↑, mínimo 1)</small>";
+      dmgBreakdownHTML = `
+        <hr/>
+        <div><b>Cálculo de Daño</b></div>
+        <div>Base (${baseDamage}) + Atk: <b>${basePlusAttack}</b></div>
+        <div>Crítico: ${isCrit ? "Sí (×1.5)" : "No"}</div>
+        ${defLine}
+        <div><b>Daño final: ${finalDamage}</b> ${finalNote}</div>
+      `;
+    }
+
+    let applyButtonHtml = "";
+    const targetUuid = targetActor?.uuid ?? "";
+    if (targetUuid && Number.isFinite(finalDamageValue) && finalDamageValue > 0) {
+      const safeTargetUuid = foundry.utils.escapeHTML(String(targetUuid));
+      const safeDamage = foundry.utils.escapeHTML(String(finalDamageValue));
+      const safeTargetName = foundry.utils.escapeHTML(targetActor.name ?? "Objetivo");
+      applyButtonHtml = `
+        <div class="pmd-damage-actions">
+          <button type="button" data-action="apply-move-damage" data-damage="${safeDamage}" data-target-uuid="${safeTargetUuid}">
+            Aplicar ${safeDamage} de daño a ${safeTargetName}
+          </button>
+        </div>
+      `;
+    }
+
+    const accuracyNotesParts = [];
+    if (globalAccBonus) {
+      accuracyNotesParts.push(`bono global ${globalAccBonus > 0 ? "+" : ""}${globalAccBonus}`);
+    }
+    if (accBonus) {
+      accuracyNotesParts.push(`bono situacional ${accBonus > 0 ? "+" : ""}${accBonus}`);
+    }
+    const accuracyNotes = accuracyNotesParts.length ? `(${accuracyNotesParts.join(" · ")})` : "";
+
+    const flavor = `
+      <div><strong>Ataque básico</strong></div>
+      <div><small>Sin tipo · sin bonificadores de daño</small></div>
+      <hr/>
+      <div>Precisión base: <b>${baseAcc}</b> ${accuracyNotes}</div>
+      <div>Umbral final: <b>${finalThreshold}</b></div>
+      <div>Umbral crítico: <b>${critThreshold}</b></div>
+      <div>d100: <b>${raw}</b></div>
+      <div>Chequeo: ${isHit ? '<span class="roll-success">ACIERTO</span>' : '<span class="roll-failure">FALLO</span>'} ${isCrit ? '· <b>CRÍTICO</b>' : ''}</div>
+      <div>Daño base (Ataque básico): <b>${baseDamage}</b></div>
+      ${dmgBreakdownHTML}
+      ${applyButtonHtml}
+    `;
+
+    await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor: this.actor }), flavor });
   }
 
   /* -------------------- Tirada de Movimiento -------------------- */
