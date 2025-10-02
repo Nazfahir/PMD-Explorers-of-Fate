@@ -20,7 +20,26 @@
   "languages": [
     { "lang": "es", "name": "Español", "path": "lang/es.json" }
   ],
-  "packs": [],
+  "packs": [
+    {
+      "name": "items",
+      "label": "Objetos",
+      "path": "packs/items.db",
+      "type": "Item"
+    },
+    {
+      "name": "moves",
+      "label": "Movimientos",
+      "path": "packs/moves.db",
+      "type": "Item"
+    },
+    {
+      "name": "traits",
+      "label": "Rasgos",
+      "path": "packs/traits.db",
+      "type": "Item"
+    }
+  ],
   "template": "template.json",
   "gridDistance": 1,
   "gridUnits": "espacio",
