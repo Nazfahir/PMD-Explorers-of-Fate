@@ -503,9 +503,15 @@ export class MyActorSheet extends BaseActorSheet {
               };
               const effSelect = element.querySelector("select[name='eff']");
               const effParsed = Number(effSelect?.value);
+              const selectedEff = Number.isFinite(effParsed) ? effParsed : 1;
+              const useAutoEffectiveness =
+                autoCalculated && Number.isFinite(effectiveness)
+                  ? selectedEff === effectiveness
+                  : false;
               safeResolve({
                 stab: !!hasStab,
-                effectiveness: Number.isFinite(effParsed) ? effParsed : 1,
+                effectiveness: selectedEff,
+                useAutoEffectiveness,
                 stat: { op: getOp("stat"), val: parse("stat") },
                 ability: { op: getOp("ability"), val: parse("ability") },
                 weather: { op: getOp("weather"), val: parse("weather") },
@@ -545,14 +551,25 @@ export class MyActorSheet extends BaseActorSheet {
     ].filter((value) => !!value);
   }
 
-  _getFirstTargetActor() {
+  _getTargetActors() {
     const targets = game?.user?.targets;
-    if (!targets || targets.size === 0) return null;
+    if (!targets || targets.size === 0) return [];
+    const actors = [];
+    const seen = new Set();
     for (const token of targets) {
       const actor = token?.actor ?? token?.document?.actor ?? null;
-      if (actor) return actor;
+      if (!actor) continue;
+      const key = actor.uuid ?? actor.id;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      actors.push(actor);
     }
-    return null;
+    return actors;
+  }
+
+  _getFirstTargetActor() {
+    const [first] = this._getTargetActors();
+    return first ?? null;
   }
 
   _moveHasStab(moveType) {
@@ -590,49 +607,41 @@ export class MyActorSheet extends BaseActorSheet {
     const roll = await (new Roll("1d100")).evaluate({ async: true });
     const raw = roll.total;
 
-    const targetActor = this._getFirstTargetActor();
+    const targetActors = this._getTargetActors();
     const baseCritThreshold = 10;
     const attackCritMod = Number(this.actor.system?.critAttackMod ?? 0);
-    const defenderCritMod = targetActor ? Number(targetActor.system?.critDefenseMod ?? 0) : 0;
-    const critThreshold = baseCritThreshold + attackCritMod + defenderCritMod;
-    const isCrit = raw < critThreshold;
     const isHit = raw < finalThreshold;
 
     const baseDamageRaw = Number(this.actor.system?.basicattack ?? 0);
     const baseDamage = Number.isFinite(baseDamageRaw) ? baseDamageRaw : 0;
 
-    let dmgBreakdownHTML = "";
-    let finalDamageValue = null;
-
-    if (isHit && targetActor) {
-      let damage = baseDamage;
-      if (isCrit) damage *= 1.5;
-      const finalDamage = Math.max(1, Math.ceil(damage));
-      finalDamageValue = finalDamage;
-      const finalNote = "<small>(redondeo ↑, mínimo 1)</small>";
-      dmgBreakdownHTML = `
-        <hr/>
-        <div><b>Cálculo de Daño</b></div>
-        <div>Daño base: <b>${baseDamage}</b></div>
-        <div>Crítico: ${isCrit ? "Sí (×1.5)" : "No"}</div>
-        <div><b>Daño final: ${finalDamage}</b> ${finalNote}</div>
-      `;
-    }
-
-    let applyButtonHtml = "";
-    const targetUuid = targetActor?.uuid ?? "";
-    if (targetUuid && Number.isFinite(finalDamageValue) && finalDamageValue > 0) {
-      const safeTargetUuid = foundry.utils.escapeHTML(String(targetUuid));
-      const safeDamage = foundry.utils.escapeHTML(String(finalDamageValue));
-      const safeTargetName = foundry.utils.escapeHTML(targetActor.name ?? "Objetivo");
-      applyButtonHtml = `
-        <div class="pmd-damage-actions">
-          <button type="button" data-action="apply-move-damage" data-damage="${safeDamage}" data-target-uuid="${safeTargetUuid}">
-            Aplicar ${safeDamage} de daño a ${safeTargetName}
-          </button>
-        </div>
-      `;
-    }
+    const applyEntries = [];
+    const targetResults = targetActors.map((actor) => {
+      const defenderCritMod = Number(actor.system?.critDefenseMod ?? 0);
+      const critThreshold = baseCritThreshold + attackCritMod + defenderCritMod;
+      const isCritTarget = isHit && raw < critThreshold;
+      const name = actor.name ?? "Objetivo";
+      const uuid = actor.uuid ?? "";
+      let finalDamage = 0;
+      if (isHit) {
+        let damage = baseDamage;
+        if (isCritTarget) damage *= 1.5;
+        finalDamage = Math.max(1, Math.ceil(damage));
+      }
+      const canApply = !!uuid && isHit && finalDamage > 0;
+      if (canApply) {
+        applyEntries.push({ targetUuid: uuid, damage: finalDamage });
+      }
+      return {
+        name,
+        uuid,
+        hit: isHit,
+        isCrit: isCritTarget,
+        effectiveness: 1,
+        finalDamage: isHit ? finalDamage : 0,
+        canApply
+      };
+    });
 
     const accuracyNotesParts = [];
     if (globalAccBonus) {
@@ -643,18 +652,67 @@ export class MyActorSheet extends BaseActorSheet {
     }
     const accuracyNotes = accuracyNotesParts.length ? `(${accuracyNotesParts.join(" · ")})` : "";
 
+    const formatEffectiveness = (value) => {
+      if (!Number.isFinite(value)) return "—";
+      const rounded = Math.round(value * 100) / 100;
+      return `×${Number.isInteger(rounded) ? rounded : rounded.toFixed(2)}`;
+    };
+
+    const targetSections = targetResults.length
+      ? targetResults
+          .map((result) => {
+            const safeName = foundry.utils.escapeHTML(result.name);
+            let inner = "";
+            if (!result.hit) {
+              inner += "<div>Resultado: Fallo</div>";
+            } else {
+              inner += `<div>Crítico: ${result.isCrit ? "Sí" : "No"}</div>`;
+              inner += `<div>Efectividad: ${formatEffectiveness(result.effectiveness)}</div>`;
+              inner += `<div>Daño final: <b>${result.finalDamage}</b></div>`;
+              if (result.canApply) {
+                const safeDamage = foundry.utils.escapeHTML(String(result.finalDamage));
+                const safeUuid = foundry.utils.escapeHTML(String(result.uuid));
+                inner += `
+                  <div class="pmd-damage-actions">
+                    <button type="button" data-action="apply-move-damage" data-damage="${safeDamage}" data-target-uuid="${safeUuid}">
+                      Aplicar ${safeDamage} de daño a ${safeName}
+                    </button>
+                  </div>
+                `;
+              }
+            }
+            return `<div class="pmd-target-result"><div><strong>${safeName}</strong></div>${inner}</div>`;
+          })
+          .join("")
+      : "<div><em>No hay objetivos seleccionados.</em></div>";
+
+    let applyAllHtml = "";
+    if (applyEntries.length > 1) {
+      const payload = encodeURIComponent(JSON.stringify(applyEntries));
+      const safePayload = foundry.utils.escapeHTML(payload);
+      applyAllHtml = `
+        <div class="pmd-damage-actions">
+          <button type="button" data-action="apply-move-damage-all" data-targets="${safePayload}">
+            Aplicar a todos
+          </button>
+        </div>
+      `;
+    }
+
+    const overallCrit = targetResults.some((result) => result.isCrit);
+    const checkText = isHit ? '<span class="roll-success">ACIERTO</span>' : '<span class="roll-failure">FALLO</span>';
+    const critText = isHit && overallCrit ? " · <b>CRÍTICO</b>" : "";
+
     const flavor = `
       <div><strong>Ataque básico</strong></div>
       <div><small>Sin tipo · sin bonificadores de daño</small></div>
       <hr/>
       <div>Precisión base: <b>${baseAcc}</b> ${accuracyNotes}</div>
       <div>Umbral final: <b>${finalThreshold}</b></div>
-      <div>Umbral crítico: <b>${critThreshold}</b></div>
       <div>d100: <b>${raw}</b></div>
-      <div>Chequeo: ${isHit ? '<span class="roll-success">ACIERTO</span>' : '<span class="roll-failure">FALLO</span>'} ${isCrit ? '· <b>CRÍTICO</b>' : ''}</div>
-      <div>Daño base (Ataque básico): <b>${baseDamage}</b></div>
-      ${dmgBreakdownHTML}
-      ${applyButtonHtml}
+      <div>Chequeo: ${checkText}${critText}</div>
+      ${targetSections}
+      ${applyAllHtml}
     `;
 
     await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor: this.actor }), flavor });
@@ -680,13 +738,13 @@ export class MyActorSheet extends BaseActorSheet {
     // Tirada d100
     const roll = await (new Roll("1d100")).evaluate({ async: true });
     const raw = roll.total;
-    const targetActor = this._getFirstTargetActor();
+    const targetActors = this._getTargetActors();
+    const targetActor = targetActors[0] ?? null;
     const baseCritThreshold = 10;
     const attackCritMod = Number(this.actor.system?.critAttackMod ?? 0);
-    const defenderCritMod = targetActor ? Number(targetActor.system?.critDefenseMod ?? 0) : 0;
     const moveCritMod = Number(item.system?.critThresholdMod ?? 0);
-    const critThreshold = baseCritThreshold + attackCritMod + defenderCritMod + moveCritMod;
-    const isCrit = raw < critThreshold;
+    const primaryDefenderCritMod = targetActor ? Number(targetActor.system?.critDefenseMod ?? 0) : 0;
+    const primaryCritThreshold = baseCritThreshold + attackCritMod + primaryDefenderCritMod + moveCritMod;
     const isHit = raw < finalThreshold;
 
     // Gastar PP
@@ -699,79 +757,90 @@ export class MyActorSheet extends BaseActorSheet {
     const effTxt = item.system?.effect ?? "";
     const baseDmg = Number(item.system?.baseDamage ?? 0);
     const target = targetActor;
-    const targetUuid = target?.uuid ?? "";
-    const safeTargetUuid = targetUuid ? foundry.utils.escapeHTML(targetUuid) : "";
-    const safeTargetName = target ? foundry.utils.escapeHTML(target?.name ?? "Objetivo") : "";
-    const canCalcBaseDamage = !!target && isHit && cat !== "status";
-    const canCalcMultiDamage = !!target && cat !== "status";
+    const canDealDamage = cat !== "status";
+    const canCalcMultiDamage = !!target && canDealDamage;
 
-    const defenderTypes = this._getTargetTypes(target);
     const normalizedMove = normalizeTypeValue(elem);
-    const autoEffect = normalizedMove && defenderTypes.length > 0
-      ? calculateTypeEffectiveness(normalizedMove, defenderTypes)
-      : null;
-    const autoEffectiveness = Number.isFinite(autoEffect?.multiplier) ? autoEffect.multiplier : null;
+    const targetEffectivenessMap = new Map();
+    for (const actor of targetActors) {
+      const key = actor.uuid ?? actor.id;
+      if (!key) continue;
+      const defenderTypes = this._getTargetTypes(actor);
+      const autoEffect = normalizedMove && defenderTypes.length > 0
+        ? calculateTypeEffectiveness(normalizedMove, defenderTypes)
+        : null;
+      const multiplier = Number.isFinite(autoEffect?.multiplier) ? autoEffect.multiplier : null;
+      targetEffectivenessMap.set(key, { multiplier });
+    }
+    const primaryKey = target ? target.uuid ?? target.id : null;
+    const primaryAuto = primaryKey ? targetEffectivenessMap.get(primaryKey) : null;
+    const autoEffectiveness = Number.isFinite(primaryAuto?.multiplier) ? primaryAuto.multiplier : null;
 
-    let dmgBreakdownHTML = "";
-    let finalDamageValue = null;
-    let isImmune = false;
-
-    if (canCalcBaseDamage) {
-      const hasStab = this._moveHasStab(elem);
-      const opts = await this._promptDamageOptions({
+    const canPromptDamage = targetActors.length > 0 && isHit && canDealDamage;
+    const hasStab = this._moveHasStab(elem);
+    let damageOptions = null;
+    if (canPromptDamage) {
+      damageOptions = await this._promptDamageOptions({
         itemName: item.name,
-        isCrit,
+        isCrit: isHit && raw < primaryCritThreshold,
         hasStab,
         effectiveness: autoEffectiveness,
-        autoCalculated: !!autoEffect
+        autoCalculated: Number.isFinite(autoEffectiveness)
       });
-      if (opts) {
-        const { atkStat, defStat, atkKey, defKey } = this._getAttackAndDefense(cat, this.actor, target);
-
-        let dmg = baseDmg + atkStat;
-        dmg = this._applyOp(dmg, opts.stat.op, opts.stat.val);
-        dmg = this._applyOp(dmg, opts.ability.op, opts.ability.val);
-        if (opts.stab) dmg += Number(this.actor.system?.stab ?? 0);
-        isImmune = opts.effectiveness === 0;
-        if (!isImmune) {
-          dmg *= opts.effectiveness;
-          if (isCrit) dmg *= 1.5;
-          dmg = this._applyOp(dmg, opts.weather.op, opts.weather.val);
-          dmg = this._applyOp(dmg, opts.terrain.op, opts.terrain.val);
-          dmg = this._applyOp(dmg, opts.enemy.op, opts.enemy.val);
-          dmg -= defStat;
-        }
-
-        const finalDamage = isImmune ? 0 : Math.max(1, Math.ceil(dmg));
-        finalDamageValue = finalDamage;
-        const defLine = isImmune
-          ? `<div>− ${defKey}: <em>No aplica</em></div>`
-          : `<div>− ${defKey}: <b>${defStat}</b></div>`;
-        const finalNote = isImmune
-          ? "<small>(objetivo inmune)</small>"
-          : "<small>(redondeo ↑, mínimo 1)</small>";
-        const basePlusStat = baseDmg + atkStat;
-
-        dmgBreakdownHTML = `
-          <hr/>
-          <div><b>Cálculo de Daño</b></div>
-          <div>Base (${baseDmg}) + ${atkKey}: <b>${basePlusStat}</b></div>
-          <div>Bonif. Estadística: ${opts.stat.op} ${opts.stat.val}</div>
-          <div>Bonif. Habilidad: ${opts.ability.op} ${opts.ability.val}${opts.stab ? ` + STAB (${this.actor.system?.stab ?? 0})` : ""}</div>
-          <div>Efectividad: ×${opts.effectiveness}</div>
-          <div>Crítico: ${isCrit ? "Sí (×1.5)" : "No"}</div>
-          <div>Clima: ${opts.weather.op} ${opts.weather.val}</div>
-          <div>Terreno: ${opts.terrain.op} ${opts.terrain.val}</div>
-          <div>Enemigo: ${opts.enemy.op} ${opts.enemy.val}</div>
-          ${defLine}
-          <div><b>Daño final: ${finalDamage}</b> ${finalNote}</div>
-        `;
-      } else if (autoEffectiveness === 0) {
-        isImmune = true;
-      }
-    } else if (autoEffectiveness === 0) {
-      isImmune = true;
     }
+
+    const targetResults = targetActors.map((actor) => {
+      const key = actor.uuid ?? actor.id ?? "";
+      const autoInfo = key ? targetEffectivenessMap.get(key) : null;
+      const autoMultiplier = Number.isFinite(autoInfo?.multiplier) ? autoInfo.multiplier : null;
+      let effectiveness = null;
+      if (damageOptions) {
+        if (damageOptions.useAutoEffectiveness && Number.isFinite(autoMultiplier)) {
+          effectiveness = autoMultiplier;
+        } else {
+          effectiveness = damageOptions.effectiveness;
+        }
+      } else {
+        effectiveness = autoMultiplier;
+      }
+      const resolvedEffectiveness = Number.isFinite(effectiveness)
+        ? effectiveness
+        : damageOptions && canDealDamage
+          ? 1
+          : effectiveness;
+      const isImmune = canDealDamage && Number.isFinite(resolvedEffectiveness) && resolvedEffectiveness === 0;
+      const defenderCritMod = Number(actor.system?.critDefenseMod ?? 0);
+      const critThreshold = baseCritThreshold + attackCritMod + defenderCritMod + moveCritMod;
+      const isCritTarget = isHit && raw < critThreshold;
+      let finalDamage = 0;
+      let canCalculateDamage = false;
+      if (isHit && damageOptions && canDealDamage && !isImmune) {
+        const { atkStat, defStat } = this._getAttackAndDefense(cat, this.actor, actor);
+        let dmg = baseDmg + atkStat;
+        dmg = this._applyOp(dmg, damageOptions.stat.op, damageOptions.stat.val);
+        dmg = this._applyOp(dmg, damageOptions.ability.op, damageOptions.ability.val);
+        if (damageOptions.stab) dmg += Number(this.actor.system?.stab ?? 0);
+        const effValue = Number.isFinite(resolvedEffectiveness) ? resolvedEffectiveness : 1;
+        dmg *= effValue;
+        if (isCritTarget) dmg *= 1.5;
+        dmg = this._applyOp(dmg, damageOptions.weather.op, damageOptions.weather.val);
+        dmg = this._applyOp(dmg, damageOptions.terrain.op, damageOptions.terrain.val);
+        dmg = this._applyOp(dmg, damageOptions.enemy.op, damageOptions.enemy.val);
+        dmg -= defStat;
+        finalDamage = Math.max(1, Math.ceil(dmg));
+        canCalculateDamage = true;
+      }
+      return {
+        name: actor.name ?? "Objetivo",
+        uuid: actor.uuid ?? "",
+        hit: isHit,
+        isCrit: canDealDamage ? isCritTarget : false,
+        effectiveness: Number.isFinite(resolvedEffectiveness) ? resolvedEffectiveness : null,
+        isImmune,
+        finalDamage: isHit && canDealDamage ? finalDamage : 0,
+        canCalculateDamage
+      };
+    });
 
     const sanitizeDie = (value) => {
       const die = String(value ?? "").toLowerCase();
@@ -801,6 +870,7 @@ export class MyActorSheet extends BaseActorSheet {
       }
     }
 
+    const primaryResult = targetResults[0] ?? null;
     let multiAttackHTML = "";
     let multiDamageTotal = 0;
     const multiAttack =
@@ -815,12 +885,14 @@ export class MyActorSheet extends BaseActorSheet {
         const additionalAttacks = Math.max(0, Math.floor(Number(multiRoll.total ?? 0)));
         const entries = [];
         let stoppedEarly = false;
+        const primaryImmune = Boolean(primaryResult?.isImmune);
+        const primaryCanCalculate = Boolean(primaryResult?.canCalculateDamage);
         for (let i = 0; i < additionalAttacks; i++) {
           const accRoll = await (new Roll("1d100")).evaluate({ async: true });
           const total = accRoll.total;
           const hit = total < finalThreshold;
-          const critExtra = total < critThreshold;
-          const damage = hit && canCalcMultiDamage && !isImmune && baseDmg > 0 ? baseDmg : 0;
+          const critExtra = total < primaryCritThreshold;
+          const damage = hit && canCalcMultiDamage && primaryCanCalculate && !primaryImmune && baseDmg > 0 ? baseDmg : 0;
           if (damage > 0) {
             multiDamageTotal += damage;
           }
@@ -863,26 +935,6 @@ export class MyActorSheet extends BaseActorSheet {
       }
     }
 
-    let applyButtonHtml = "";
-    if (safeTargetUuid) {
-      const baseComponent = Number.isFinite(finalDamageValue) ? finalDamageValue : null;
-      const totalDamage = (baseComponent ?? 0) + multiDamageTotal;
-      if (totalDamage > 0) {
-        const breakdownParts = [];
-        if (baseComponent !== null) breakdownParts.push(`${baseComponent} base`);
-        if (multiDamageTotal > 0) breakdownParts.push(`${multiDamageTotal} multiataque`);
-        const breakdownHtml = breakdownParts.length > 1 ? `<div><small>Desglose: ${breakdownParts.join(" + ")}</small></div>` : "";
-        applyButtonHtml = `
-          <div class="pmd-damage-actions">
-            <button type="button" data-action="apply-move-damage" data-damage="${totalDamage}" data-target-uuid="${safeTargetUuid}">
-              Aplicar ${totalDamage} de daño a ${safeTargetName}
-            </button>
-            ${breakdownHtml}
-          </div>
-        `;
-      }
-    }
-
     const accuracyNotesParts = [];
     if (globalAccBonus) {
       accuracyNotesParts.push(`bono global ${globalAccBonus > 0 ? "+" : ""}${globalAccBonus}`);
@@ -891,6 +943,77 @@ export class MyActorSheet extends BaseActorSheet {
       accuracyNotesParts.push(`bono situacional ${accBonus > 0 ? "+" : ""}${accBonus}`);
     }
     const accuracyNotes = accuracyNotesParts.length ? `(${accuracyNotesParts.join(" · ")})` : "";
+    if (primaryResult && multiDamageTotal > 0) {
+      primaryResult.finalDamage += multiDamageTotal;
+    }
+
+    const formatEffectiveness = (value) => {
+      if (!Number.isFinite(value)) return "—";
+      const rounded = Math.round(value * 100) / 100;
+      return `×${Number.isInteger(rounded) ? rounded : rounded.toFixed(2)}`;
+    };
+
+    const applyEntries = targetResults
+      .filter((result) => result.hit && result.finalDamage > 0 && result.uuid)
+      .map((result) => ({ targetUuid: result.uuid, damage: result.finalDamage }));
+
+    const targetSections = targetResults.length
+      ? targetResults
+          .map((result) => {
+            const safeName = foundry.utils.escapeHTML(result.name);
+            if (!result.hit) {
+              return `<div class="pmd-target-result"><div><strong>${safeName}</strong></div><div>Resultado: Fallo</div></div>`;
+            }
+            const critText = canDealDamage ? (result.isCrit ? "Sí" : "No") : "—";
+            const effectivenessText = canDealDamage && Number.isFinite(result.effectiveness)
+              ? formatEffectiveness(result.effectiveness)
+              : canDealDamage
+                ? "—"
+                : "—";
+            let inner = `
+              <div>Crítico: ${critText}</div>
+              <div>Efectividad: ${effectivenessText}</div>
+            `;
+            if (!canDealDamage) {
+              inner += "<div>Daño final: —</div>";
+            } else if (result.isImmune) {
+              inner += "<div>Daño final: 0</div>";
+              inner += "<div>Objetivo inmune.</div>";
+            } else {
+              inner += `<div>Daño final: <b>${result.finalDamage}</b></div>`;
+            }
+            if (result.finalDamage > 0 && result.uuid) {
+              const safeDamage = foundry.utils.escapeHTML(String(result.finalDamage));
+              const safeUuid = foundry.utils.escapeHTML(String(result.uuid));
+              inner += `
+                <div class="pmd-damage-actions">
+                  <button type="button" data-action="apply-move-damage" data-damage="${safeDamage}" data-target-uuid="${safeUuid}">
+                    Aplicar ${safeDamage} de daño a ${safeName}
+                  </button>
+                </div>
+              `;
+            }
+            return `<div class="pmd-target-result"><div><strong>${safeName}</strong></div>${inner}</div>`;
+          })
+          .join("")
+      : "<div><em>No hay objetivos seleccionados.</em></div>";
+
+    let applyAllHtml = "";
+    if (applyEntries.length > 1) {
+      const payload = encodeURIComponent(JSON.stringify(applyEntries));
+      const safePayload = foundry.utils.escapeHTML(payload);
+      applyAllHtml = `
+        <div class="pmd-damage-actions">
+          <button type="button" data-action="apply-move-damage-all" data-targets="${safePayload}">
+            Aplicar a todos
+          </button>
+        </div>
+      `;
+    }
+
+    const overallCrit = canDealDamage ? targetResults.some((result) => result.isCrit) : false;
+    const checkText = isHit ? '<span class="roll-success">ACIERTO</span>' : '<span class="roll-failure">FALLO</span>';
+    const critSuffix = isHit && overallCrit ? " · <b>CRÍTICO</b>" : "";
 
     const flavor = `
       <div><strong>Usa Movimiento:</strong> ${foundry.utils.escapeHTML(item.name)}</div>
@@ -898,14 +1021,14 @@ export class MyActorSheet extends BaseActorSheet {
       <hr/>
       <div>Precisión base: <b>${baseAcc}</b> ${accuracyNotes}</div>
       <div>Umbral final: <b>${finalThreshold}</b></div>
-      <div>Umbral crítico: <b>${critThreshold}</b></div>
+      <div>Umbral crítico (objetivo primario): <b>${primaryCritThreshold}</b></div>
       <div>d100: <b>${raw}</b></div>
-      <div>Chequeo: ${isHit ? '<span class="roll-success">ACIERTO</span>' : '<span class="roll-failure">FALLO</span>'} ${isCrit ? '· <b>CRÍTICO</b>' : ''}</div>
+      <div>Chequeo: ${checkText}${critSuffix}</div>
       ${effTxt ? `<hr/><div><em>Efecto:</em> ${effTxt}</div>` : ""}
-      ${dmgBreakdownHTML}
+      ${targetSections}
+      ${applyAllHtml}
       ${extraRollHTML}
       ${multiAttackHTML}
-      ${applyButtonHtml}
     `;
 
     await roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor: this.actor }), flavor });

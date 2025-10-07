@@ -112,6 +112,56 @@ Hooks.on("renderChatMessage", (message, html) => {
   const element = root instanceof HTMLElement ? root : null;
   if (!element) return;
 
+  const getProperty =
+    foundry?.utils?.getProperty ??
+    ((object, path) => {
+      if (!object || typeof path !== "string") return undefined;
+      return path
+        .split(".")
+        .reduce((value, part) => (value && typeof value === "object" ? value[part] : undefined), object);
+    });
+
+  const applyDamageToActor = async (targetUuid, damage) => {
+    if (!targetUuid || !Number.isFinite(damage) || damage <= 0) return true;
+
+    const actor = await fromUuid(targetUuid);
+    if (!(actor instanceof Actor)) {
+      ui.notifications?.warn("No se encontró el objetivo para aplicar daño.");
+      return false;
+    }
+
+    if (!actor.isOwner) {
+      ui.notifications?.warn("No tienes permisos para modificar a ese objetivo.");
+      return false;
+    }
+
+    const currentHp = Number(getProperty(actor, "system.hp.value"));
+    if (!Number.isFinite(currentHp)) {
+      ui.notifications?.warn("No se pudo determinar el HP del objetivo.");
+      return false;
+    }
+
+    const newHp = Math.max(0, currentHp - damage);
+
+    try {
+      await actor.update({ "system.hp.value": newHp });
+    } catch (err) {
+      console.error(err);
+      ui.notifications?.error("No se pudo aplicar el daño.");
+      return false;
+    }
+
+    if (currentHp > 0 && newHp === 0) {
+      const actorName = foundry.utils.escapeHTML(actor.name ?? "Objetivo");
+      await ChatMessage.create({
+        speaker: ChatMessage.getSpeaker({ actor }),
+        content: `<div><strong>${actorName}</strong> fue debilitado.</div>`
+      });
+    }
+
+    return true;
+  };
+
   element.querySelectorAll("[data-action='apply-move-damage']").forEach((button) => {
     button.addEventListener("click", async (event) => {
       event.preventDefault();
@@ -125,53 +175,44 @@ Hooks.on("renderChatMessage", (message, html) => {
 
       btn.disabled = true;
 
-      const actor = await fromUuid(targetUuid);
-      if (!(actor instanceof Actor)) {
+      const success = await applyDamageToActor(targetUuid, damage);
+      if (!success) {
         btn.disabled = false;
-        ui.notifications?.warn("No se encontró el objetivo para aplicar daño.");
-        return;
       }
+    });
+  });
 
-      if (!actor.isOwner) {
-        btn.disabled = false;
-        ui.notifications?.warn("No tienes permisos para modificar a ese objetivo.");
-        return;
-      }
+  element.querySelectorAll("[data-action='apply-move-damage-all']").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      const btn = event.currentTarget;
+      if (!(btn instanceof HTMLButtonElement)) return;
 
-      const getProperty =
-        foundry?.utils?.getProperty ??
-        ((object, path) => {
-          if (!object || typeof path !== "string") return undefined;
-          return path
-            .split(".")
-            .reduce((value, part) => (value && typeof value === "object" ? value[part] : undefined), object);
-        });
+      const payloadRaw = btn.dataset.targets ?? "";
+      if (!payloadRaw) return;
 
-      const currentHp = Number(getProperty(actor, "system.hp.value"));
-      if (!Number.isFinite(currentHp)) {
-        btn.disabled = false;
-        ui.notifications?.warn("No se pudo determinar el HP del objetivo.");
-        return;
-      }
-
-      const newHp = Math.max(0, currentHp - damage);
-
+      let entries;
       try {
-        await actor.update({ "system.hp.value": newHp });
+        entries = JSON.parse(decodeURIComponent(payloadRaw));
       } catch (err) {
         console.error(err);
-        btn.disabled = false;
-        ui.notifications?.error("No se pudo aplicar el daño.");
+        ui.notifications?.warn("No se pudo leer la lista de objetivos.");
         return;
       }
 
-      const actorName = foundry.utils.escapeHTML(actor.name ?? "Objetivo");
+      if (!Array.isArray(entries) || entries.length === 0) return;
 
-      if (currentHp > 0 && newHp === 0) {
-        await ChatMessage.create({
-          speaker: ChatMessage.getSpeaker({ actor }),
-          content: `<div><strong>${actorName}</strong> fue debilitado.</div>`
-        });
+      btn.disabled = true;
+
+      for (const entry of entries) {
+        const targetUuid = String(entry?.targetUuid ?? entry?.uuid ?? "");
+        const damage = Number(entry?.damage ?? entry?.amount ?? NaN);
+        if (!targetUuid || !Number.isFinite(damage) || damage <= 0) continue;
+        const success = await applyDamageToActor(targetUuid, damage);
+        if (!success) {
+          btn.disabled = false;
+          return;
+        }
       }
     });
   });
