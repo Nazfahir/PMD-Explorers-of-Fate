@@ -282,6 +282,10 @@ export class MyActorSheet extends BaseActorSheet {
     if (Number.isFinite(maxHP)) {
       actorUpdates["system.hp.value"] = Math.max(0, maxHP);
     }
+    const tempHP = Number(this.actor.system?.hp?.temp);
+    if (Number.isFinite(tempHP) && tempHP !== 0) {
+      actorUpdates["system.hp.temp"] = 0;
+    }
 
     const moveUpdates = this.actor.items
       .filter((item) => item.type === "move")

@@ -4,7 +4,7 @@
     "templates": {
       "baseCreature": {
         "lvl": 1,
-        "hp": { "max": 10, "value": 10 },
+        "hp": { "max": 10, "value": 10, "temp": 0 },
         "experience": { "max": 100, "value": 0 },
         "attack": 0,
         "spAttack": 0,
