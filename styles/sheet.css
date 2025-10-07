@@ -55,6 +55,28 @@
   box-sizing: border-box;
 }
 
+.PMD-Explorers-of-Fate.sheet.item .permanent-effects-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.PMD-Explorers-of-Fate.sheet.item .permanent-effects-header button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 999px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.PMD-Explorers-of-Fate.sheet.item .permanent-effects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* === Botón que se ve como enlace === */
 .PMD-Explorers-of-Fate .as-link {
   background: none;

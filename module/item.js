@@ -101,21 +101,47 @@ export class PMDItem extends Item {
           sys.uses.max = Math.max(0, Math.round(num(sys.uses.max, 1)));
           sys.uses.value = Math.round(num(sys.uses.value, sys.uses.max));
 
-          const permanentEffect =
-            typeof sys.permanentEffect === "object" && !Array.isArray(sys.permanentEffect)
-              ? sys.permanentEffect
-              : {};
+          const rawEffects = Array.isArray(sys.permanentEffects) ? sys.permanentEffects : [];
+          const permanentEffects = rawEffects
+            .filter((effect) => effect && typeof effect === "object" && !Array.isArray(effect))
+            .map((effect) => {
+              const attributeKey = String(effect.attribute ?? "");
+              const mode = effect.mode === "subtract" ? "subtract" : "add";
+              const amount = Math.max(0, num(effect.amount, 0));
+              const isValidAttribute = attributeKey in CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG;
+              return {
+                attribute: isValidAttribute ? attributeKey : "",
+                mode,
+                amount,
+              };
+            });
 
-          const attributeKey = String(permanentEffect.attribute ?? "");
-          const isValidAttribute = attributeKey in CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG;
-          const mode = permanentEffect.mode === "subtract" ? "subtract" : "add";
-          const amount = Math.max(0, num(permanentEffect.amount, 0));
+          if (!permanentEffects.length) {
+            const legacy =
+              typeof sys.permanentEffect === "object" &&
+              sys.permanentEffect !== null &&
+              !Array.isArray(sys.permanentEffect)
+                ? sys.permanentEffect
+                : null;
+            if (legacy) {
+              const attributeKey = String(legacy.attribute ?? "");
+              const mode = legacy.mode === "subtract" ? "subtract" : "add";
+              const amount = Math.max(0, num(legacy.amount, 0));
+              const isValidAttribute = attributeKey in CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG;
+              permanentEffects.push({
+                attribute: isValidAttribute ? attributeKey : "",
+                mode,
+                amount,
+              });
+            }
+          }
 
-          sys.permanentEffect = {
-            attribute: isValidAttribute ? attributeKey : "",
-            mode,
-            amount,
-          };
+          if (!permanentEffects.length) {
+            permanentEffects.push({ attribute: "", mode: "add", amount: 0 });
+          }
+
+          sys.permanentEffects = permanentEffects;
+          sys.permanentEffect = permanentEffects[0] ?? { attribute: "", mode: "add", amount: 0 };
         }
         break;
       }
