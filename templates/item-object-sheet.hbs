@@ -97,36 +97,45 @@
 
     {{#if isConsumable}}
       <div class="tab" data-tab="permanent" data-group="primary">
-        <div class="grid two-col">
-          <div class="field">
-            <label>Atributo</label>
-            <select name="system.permanentEffect.attribute">
-              {{#each consumablePermanentAttributes as |option|}}
-                <option value="{{option.key}}" {{#if (eq option.key ../system.permanentEffect.attribute)}}selected{{/if}}>
-                  {{option.label}}
-                </option>
-              {{/each}}
-            </select>
-          </div>
+        <div class="field permanent-effects-header">
+          <label>Efectos permanentes</label>
+          <button type="button" class="permanent-effect-add" title="Añadir efecto permanente" aria-label="Añadir efecto permanente">+</button>
+        </div>
 
-          <div class="field">
-            <label>Modo</label>
-            <select name="system.permanentEffect.mode">
-              <option value="add" {{#if (eq system.permanentEffect.mode "add")}}selected{{/if}}>Sumar</option>
-              <option value="subtract" {{#if (eq system.permanentEffect.mode "subtract")}}selected{{/if}}>Restar</option>
-            </select>
-          </div>
+        <div class="permanent-effects-list">
+          {{#each permanentEffects as |effect|}}
+            <div class="grid two-col permanent-effect-row">
+              <div class="field">
+                <label>Atributo</label>
+                <select name="system.permanentEffects.{{@index}}.attribute">
+                  {{#each ../consumablePermanentAttributes as |option|}}
+                    <option value="{{option.key}}" {{#if (eq option.key effect.attribute)}}selected{{/if}}>
+                      {{option.label}}
+                    </option>
+                  {{/each}}
+                </select>
+              </div>
 
-          <div class="field">
-            <label>Cantidad</label>
-            <input
-              type="number"
-              name="system.permanentEffect.amount"
-              value="{{system.permanentEffect.amount}}"
-              data-dtype="Number"
-              min="0"
-            />
-          </div>
+              <div class="field">
+                <label>Modo</label>
+                <select name="system.permanentEffects.{{@index}}.mode">
+                  <option value="add" {{#if (eq effect.mode "add")}}selected{{/if}}>Sumar</option>
+                  <option value="subtract" {{#if (eq effect.mode "subtract")}}selected{{/if}}>Restar</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>Cantidad</label>
+                <input
+                  type="number"
+                  name="system.permanentEffects.{{@index}}.amount"
+                  value="{{effect.amount}}"
+                  data-dtype="Number"
+                  min="0"
+                />
+              </div>
+            </div>
+          {{/each}}
         </div>
 
         <p class="notes">Este cambio se aplicará cuando se utilice el consumible.</p>

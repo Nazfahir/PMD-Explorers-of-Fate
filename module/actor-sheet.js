@@ -891,66 +891,102 @@ export class MyActorSheet extends BaseActorSheet {
     const itemName = foundry.utils.escapeHTML(item.name ?? "Objeto");
     const actorName = foundry.utils.escapeHTML(this.actor.name ?? "Personaje");
 
-    const permanentEffect =
-      typeof item.system?.permanentEffect === "object" && !Array.isArray(item.system?.permanentEffect)
+    const rawPermanentEffects = Array.isArray(item.system?.permanentEffects)
+      ? item.system.permanentEffects
+      : [];
+
+    const legacyPermanentEffect =
+      typeof item.system?.permanentEffect === "object" &&
+      item.system?.permanentEffect !== null &&
+      !Array.isArray(item.system?.permanentEffect)
         ? item.system.permanentEffect
-        : {};
-    const attributeKey = String(permanentEffect?.attribute ?? "");
-    const attributeConfig = CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG[attributeKey];
-    const effectAmount = Number(permanentEffect?.amount ?? 0);
-    const effectMode = permanentEffect?.mode === "subtract" ? "subtract" : "add";
+        : null;
 
-    let permanentUpdates = null;
-    let permanentMessage = null;
+    const effectSources = rawPermanentEffects.length
+      ? rawPermanentEffects
+      : legacyPermanentEffect
+      ? [legacyPermanentEffect]
+      : [];
 
-    if (attributeConfig && Number.isFinite(effectAmount) && effectAmount > 0) {
-      const getProperty =
-        foundry?.utils?.getProperty ??
-        ((object, path) => {
-          if (!object || typeof path !== "string") return undefined;
-          return path
-            .split(".")
-            .reduce((value, part) => (value && typeof value === "object" ? value[part] : undefined), object);
-        });
+    const permanentEffects = [];
+    for (const effect of effectSources) {
+      if (!effect || typeof effect !== "object" || Array.isArray(effect)) continue;
+      const attributeKey = String(effect.attribute ?? "");
+      const attributeConfig = CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG[attributeKey];
+      if (!attributeConfig) continue;
+      const amountValue = Number(effect.amount ?? 0);
+      if (!Number.isFinite(amountValue) || amountValue <= 0) continue;
+      const mode = effect.mode === "subtract" ? "subtract" : "add";
+      permanentEffects.push({
+        attributeConfig,
+        amount: Math.abs(amountValue),
+        mode,
+      });
+    }
 
-      const actorSource = this.actor?._source ?? {};
-      const baseValueRaw = getProperty(actorSource, attributeConfig.path);
+    const getProperty =
+      foundry?.utils?.getProperty ??
+      ((object, path) => {
+        if (!object || typeof path !== "string") return undefined;
+        return path
+          .split(".")
+          .reduce((value, part) => (value && typeof value === "object" ? value[part] : undefined), object);
+      });
+
+    const actorSource = this.actor?._source ?? {};
+    const baseValueCache = new Map();
+    const readBaseValue = (path) => {
+      if (baseValueCache.has(path)) return baseValueCache.get(path);
+      const baseValueRaw = getProperty(actorSource, path);
       const baseValue = Number(baseValueRaw);
       const safeBase = Number.isFinite(baseValue) ? baseValue : 0;
-      const magnitude = Math.abs(effectAmount);
-      const signedDelta = effectMode === "subtract" ? -magnitude : magnitude;
+      baseValueCache.set(path, safeBase);
+      return safeBase;
+    };
+
+    const permanentUpdates = {};
+    const permanentMessages = [];
+    let hasPermanentUpdates = false;
+
+    for (const effect of permanentEffects) {
+      const { attributeConfig, amount, mode } = effect;
+      const safeBase = readBaseValue(attributeConfig.path);
+      const signedDelta = mode === "subtract" ? -amount : amount;
 
       let newValue = safeBase + signedDelta;
       if (typeof attributeConfig.clamp === "function") {
         newValue = attributeConfig.clamp(newValue, this.actor);
       }
 
-      if (Number.isFinite(newValue)) {
-        const updates = {};
-        const primaryChanged = !Object.is(newValue, safeBase);
-        if (primaryChanged) {
-          updates[attributeConfig.path] = newValue;
-        }
+      if (!Number.isFinite(newValue)) {
+        baseValueCache.set(attributeConfig.path, safeBase);
+        continue;
+      }
 
-        if (typeof attributeConfig.afterUpdate === "function") {
-          const additional = attributeConfig.afterUpdate(newValue, this.actor);
-          if (additional && typeof additional === "object") {
-            Object.assign(updates, additional);
-          }
-        }
+      baseValueCache.set(attributeConfig.path, newValue);
 
-        if (Object.keys(updates).length) {
-          permanentUpdates = updates;
+      if (!Object.is(newValue, safeBase)) {
+        permanentUpdates[attributeConfig.path] = newValue;
+        hasPermanentUpdates = true;
 
-          if (primaryChanged) {
-            const actualDelta = newValue - safeBase;
-            const deltaText = `${actualDelta >= 0 ? "+" : ""}${actualDelta}`;
-            const finalValue = newValue;
-            permanentMessage = `<div><strong>${attributeConfig.label}:</strong> ${deltaText} (ahora ${finalValue})</div>`;
+        const actualDelta = newValue - safeBase;
+        const deltaText = `${actualDelta >= 0 ? "+" : ""}${actualDelta}`;
+        const finalValue = newValue;
+        permanentMessages.push(`<div><strong>${attributeConfig.label}:</strong> ${deltaText} (ahora ${finalValue})</div>`);
+      }
+
+      if (typeof attributeConfig.afterUpdate === "function") {
+        const additional = attributeConfig.afterUpdate(newValue, this.actor);
+        if (additional && typeof additional === "object") {
+          for (const [path, value] of Object.entries(additional)) {
+            permanentUpdates[path] = value;
+            hasPermanentUpdates = true;
           }
         }
       }
     }
+
+    const permanentMessage = permanentMessages.length ? permanentMessages.join("") : null;
 
     const effectsToCreate = (item.effects?.contents ?? [])
       .filter((effect) => {
@@ -1002,7 +1038,7 @@ export class MyActorSheet extends BaseActorSheet {
       await this.actor.createEmbeddedDocuments("ActiveEffect", effectsToCreate);
     }
 
-    if (permanentUpdates) {
+    if (hasPermanentUpdates) {
       await this.actor.update(permanentUpdates);
     }
 

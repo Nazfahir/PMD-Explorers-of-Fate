@@ -76,6 +76,7 @@
     "consumable": {
       "templates": ["baseObject"],
       "uses": { "max": 1, "value": 1 },
+      "permanentEffects": [{ "attribute": "", "mode": "add", "amount": 0 }],
       "permanentEffect": { "attribute": "", "mode": "add", "amount": 0 }
     },
     "gear": {

@@ -102,8 +102,48 @@ export class PMDItemSheet extends BaseItemSheet {
     data.typeOptions = TYPE_OPTIONS;
     data.activeEffects = mapActiveEffects(this.item);
     data.consumablePermanentAttributes = CONSUMABLE_PERMANENT_ATTRIBUTE_OPTIONS;
+    data.permanentEffects = this._getPermanentEffectsForSheet();
     data.moveDieOptions = MOVE_DIE_OPTIONS;
     return data;
+  }
+
+  _getPermanentEffectsForSheet() {
+    const effects = [];
+
+    const rawEffects = Array.isArray(this.item.system?.permanentEffects)
+      ? this.item.system.permanentEffects
+      : [];
+
+    for (const effect of rawEffects) {
+      if (!effect || typeof effect !== "object" || Array.isArray(effect)) continue;
+      const attribute = String(effect.attribute ?? "");
+      const mode = effect.mode === "subtract" ? "subtract" : "add";
+      const amountRaw = Number(effect.amount ?? 0);
+      const amount = Number.isFinite(amountRaw) ? amountRaw : 0;
+      effects.push({ attribute, mode, amount });
+    }
+
+    if (!effects.length) {
+      const legacy =
+        typeof this.item.system?.permanentEffect === "object" &&
+        this.item.system?.permanentEffect !== null &&
+        !Array.isArray(this.item.system?.permanentEffect)
+          ? this.item.system.permanentEffect
+          : null;
+      if (legacy) {
+        const attribute = String(legacy.attribute ?? "");
+        const mode = legacy.mode === "subtract" ? "subtract" : "add";
+        const amountRaw = Number(legacy.amount ?? 0);
+        const amount = Number.isFinite(amountRaw) ? amountRaw : 0;
+        effects.push({ attribute, mode, amount });
+      }
+    }
+
+    if (!effects.length) {
+      effects.push({ attribute: "", mode: "add", amount: 0 });
+    }
+
+    return effects;
   }
 
   /** @override */
@@ -117,6 +157,47 @@ export class PMDItemSheet extends BaseItemSheet {
     if (!root) return;
 
     bindEffectControls(root, this.item, "item");
+
+    root.querySelectorAll(".permanent-effect-add").forEach((button) => {
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const current = Array.isArray(this.item.system?.permanentEffects)
+          ? this.item.system.permanentEffects
+          : [];
+
+        const sanitized = current
+          .filter((effect) => effect && typeof effect === "object" && !Array.isArray(effect))
+          .map((effect) => {
+            const attribute = String(effect.attribute ?? "");
+            const mode = effect.mode === "subtract" ? "subtract" : "add";
+            const amountValue = Number(effect.amount ?? 0);
+            const amount = Number.isFinite(amountValue) ? amountValue : 0;
+            return { attribute, mode, amount };
+          });
+
+        if (!sanitized.length) {
+          const legacy =
+            typeof this.item.system?.permanentEffect === "object" &&
+            this.item.system?.permanentEffect !== null &&
+            !Array.isArray(this.item.system?.permanentEffect)
+              ? this.item.system.permanentEffect
+              : null;
+          if (legacy) {
+            const attribute = String(legacy.attribute ?? "");
+            const mode = legacy.mode === "subtract" ? "subtract" : "add";
+            const amountValue = Number(legacy.amount ?? 0);
+            const amount = Number.isFinite(amountValue) ? amountValue : 0;
+            sanitized.push({ attribute, mode, amount });
+          }
+        }
+
+        sanitized.push({ attribute: "", mode: "add", amount: 0 });
+
+        await this.item.update({ "system.permanentEffects": sanitized });
+      });
+    });
 
     root.querySelectorAll("input[data-toggle-target]").forEach((input) => {
       if (!(input instanceof HTMLInputElement)) return;
