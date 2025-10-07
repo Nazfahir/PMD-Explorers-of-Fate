@@ -2,14 +2,14 @@
   "id": "PMD-Explorers-of-Fate",
   "title": "Pokemon Mistery Dungeon Explorer of Fate",
   "description": "Sistema de PMD Explorer of fate 1.6",
-  "version": "0.5.8.2",
+  "version": "0.5.8.3",
   "compatibility": {
     "minimum": "12",
     "verified": "13"
   },
-  "version": "0.5.8.2",
+  "version": "0.5.8.3",
   "manifest": "https://raw.githubusercontent.com/Nazfahir/PMD-Explorers-of-Fate/main/system.json",
-  "download": "https://github.com/Nazfahir/PMD-Explorers-of-Fate/archive/refs/tags/0.5.8.2.zip",
+  "download": "https://github.com/Nazfahir/PMD-Explorers-of-Fate/archive/refs/tags/0.5.8.3.zip",
   "compatibility": {
     "minimum": "12",
     "verified": "13"
@@ -47,6 +47,7 @@
   "license": "LICENSE"
 
 }
+
 
 
 
