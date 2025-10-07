@@ -141,10 +141,26 @@ Hooks.on("renderChatMessage", (message, html) => {
       return false;
     }
 
-    const newHp = Math.max(0, currentHp - damage);
+    const currentTempRaw = Number(getProperty(actor, "system.hp.temp"));
+    const currentTemp = Number.isFinite(currentTempRaw) ? Math.max(0, currentTempRaw) : 0;
+
+    let remainingDamage = Math.max(0, damage);
+    let newTemp = currentTemp;
+    if (remainingDamage > 0 && currentTemp > 0) {
+      const tempSpent = Math.min(currentTemp, remainingDamage);
+      newTemp = currentTemp - tempSpent;
+      remainingDamage -= tempSpent;
+    }
+
+    const newHp = Math.max(0, currentHp - remainingDamage);
+
+    const updates = { "system.hp.value": newHp };
+    if (newTemp !== currentTemp) {
+      updates["system.hp.temp"] = newTemp;
+    }
 
     try {
-      await actor.update({ "system.hp.value": newHp });
+      await actor.update(updates);
     } catch (err) {
       console.error(err);
       ui.notifications?.error("No se pudo aplicar el daño.");

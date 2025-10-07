@@ -943,8 +943,13 @@ export class MyActorSheet extends BaseActorSheet {
       accuracyNotesParts.push(`bono situacional ${accBonus > 0 ? "+" : ""}${accBonus}`);
     }
     const accuracyNotes = accuracyNotesParts.length ? `(${accuracyNotesParts.join(" · ")})` : "";
-    if (primaryResult && multiDamageTotal > 0) {
-      primaryResult.finalDamage += multiDamageTotal;
+    if (multiDamageTotal > 0) {
+      for (const result of targetResults) {
+        if (!result.hit) continue;
+        if (!result.canCalculateDamage) continue;
+        if (result.isImmune) continue;
+        result.finalDamage += multiDamageTotal;
+      }
     }
 
     const formatEffectiveness = (value) => {
