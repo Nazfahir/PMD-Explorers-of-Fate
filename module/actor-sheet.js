@@ -330,15 +330,33 @@ export class MyActorSheet extends BaseActorSheet {
     const mode = await this._askRollMode();
     if (!mode) return;
 
-    const val = Number(this.actor.system?.skills?.[skillKey] ?? 0);
-    const threshold = mode === "critical" ? Math.ceil(val / 2) : val;
+    const baseValRaw = Number(this.actor.system?.skills?.[skillKey] ?? 0);
+    const baseVal = Number.isFinite(baseValRaw) ? baseValRaw : 0;
+
+    let situationalBonus = 0;
+    if (this.actor.system?.soccerMode) {
+      const bonus = await this._promptSkillBonus(label);
+      if (bonus === null) return;
+      if (Number.isFinite(bonus)) situationalBonus = bonus;
+    }
+
+    const totalSkill = baseVal + situationalBonus;
+    const threshold = mode === "critical"
+      ? Math.ceil(totalSkill / 2)
+      : totalSkill;
 
     const roll = await (new Roll("1d100")).evaluate({ async: true });
     const success = roll.total < threshold;
 
+    const bonusSign = situationalBonus < 0 ? "-" : "+";
+    const bonusText = situationalBonus !== 0
+      ? ` ${bonusSign} ${Math.abs(situationalBonus)} = ${totalSkill}`
+      : "";
+    const modeNote = this.actor.system?.soccerMode ? " (Modo Futbol)" : "";
+
     const flavor = `
       <div><strong>Tirada de ${label}</strong> (${mode === "critical" ? "Crítica" : "Normal"})</div>
-      <div>Umbral: <b>${threshold}</b> (habilidad: ${val})</div>
+      <div>Umbral: <b>${threshold}</b> (habilidad: ${baseVal}${bonusText}${modeNote})</div>
       <div>Resultado: <b>${roll.total}</b> → ${
         success ? '<span class="roll-success">Éxito</span>' : '<span class="roll-failure">Fallo</span>'
       }</div>
@@ -347,6 +365,38 @@ export class MyActorSheet extends BaseActorSheet {
     await roll.toMessage({
       speaker: ChatMessage.getSpeaker({ actor: this.actor }),
       flavor
+    });
+  }
+
+  async _promptSkillBonus(skillLabel = "") {
+    return await new Promise((resolve) => {
+      const safeResolve = onceResolver(resolve);
+      const escapedLabel = foundry.utils.escapeHTML(skillLabel);
+      const content = `
+        <div class="form-group">
+          <label>Bono situacional para <b>${escapedLabel}</b>:</label>
+          <input type="number" name="bonus" value="0" step="1" />
+          <p class="notes">Se suma al valor de la habilidad antes de calcular el umbral.</p>
+        </div>
+      `;
+      new Dialog({
+        title: "Bono situacional",
+        content,
+        buttons: {
+          ok: {
+            label: "Aplicar",
+            callback: (html) => {
+              const element = resolveHTMLElement(html);
+              const input = element?.querySelector('input[name="bonus"]');
+              const value = Number(input?.value);
+              safeResolve(Number.isFinite(value) ? value : 0);
+            }
+          },
+          cancel: { label: "Cancelar", callback: () => safeResolve(null) }
+        },
+        default: "ok",
+        close: () => safeResolve(null)
+      }).render(true);
     });
   }
 
