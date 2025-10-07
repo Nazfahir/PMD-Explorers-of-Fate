@@ -27,6 +27,14 @@ const clampHpMax = (value) => {
   return Math.max(0, Math.round(value));
 };
 
+const clampExperienceValue = (value, actor) => {
+  const maxExp = Number(actor?.system?.experience?.max);
+  const safeMax = Number.isFinite(maxExp) ? Math.max(0, Math.round(maxExp)) : null;
+  const safeValue = Number.isFinite(value) ? Math.round(value) : 0;
+  if (safeMax === null) return Math.max(0, safeValue);
+  return Math.clamp(safeValue, 0, safeMax);
+};
+
 export const CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG = {
   hpValue: {
     label: "HP actual",
@@ -45,6 +53,30 @@ export const CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG = {
       const clamped = Math.clamp(Math.round(currentHp), 0, safeMax);
       if (clamped === Math.round(currentHp)) return null;
       return { "system.hp.value": clamped };
+    },
+  },
+  hpTemp: {
+    label: "HP temporal / Escudo",
+    path: "system.hp.temp",
+    clamp: clampNonNegative,
+  },
+  experienceValue: {
+    label: "EXP actual",
+    path: "system.experience.value",
+    clamp: clampExperienceValue,
+  },
+  experienceMax: {
+    label: "EXP máxima",
+    path: "system.experience.max",
+    clamp: clampNonNegative,
+    afterUpdate: (newMax, actor) => {
+      const sourceExp = actor?._source?.system?.experience?.value;
+      const currentExp = Number(sourceExp ?? actor?.system?.experience?.value);
+      if (!Number.isFinite(currentExp)) return null;
+      const safeMax = Number.isFinite(newMax) ? Math.max(0, Math.round(newMax)) : 0;
+      const clamped = Math.clamp(Math.round(currentExp), 0, safeMax);
+      if (clamped === Math.round(currentExp)) return null;
+      return { "system.experience.value": clamped };
     },
   },
   lp: {
@@ -82,10 +114,35 @@ export const CONSUMABLE_PERMANENT_ATTRIBUTE_CONFIG = {
     path: "system.spDefense",
     clamp: clampInteger,
   },
+  stab: {
+    label: "STAB",
+    path: "system.stab",
+    clamp: clampInteger,
+  },
+  basicattack: {
+    label: "Basic Attack",
+    path: "system.basicattack",
+    clamp: clampInteger,
+  },
   accuracyBonus: {
     label: "Precisión global",
     path: "system.accuracyBonus",
     clamp: clampInteger,
+  },
+  critAttackMod: {
+    label: "Mod. crítico (ataques)",
+    path: "system.critAttackMod",
+    clamp: clampInteger,
+  },
+  critDefenseMod: {
+    label: "Mod. crítico (defensa)",
+    path: "system.critDefenseMod",
+    clamp: clampInteger,
+  },
+  belly: {
+    label: "Belly",
+    path: "system.belly",
+    clamp: clampNonNegative,
   },
 };
 

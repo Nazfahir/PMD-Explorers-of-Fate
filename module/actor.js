@@ -32,9 +32,10 @@ export class MyActor extends Actor {
     sys.leyenda = String(sys.leyenda ?? "");
     sys.background = String(sys.background ?? "");
 
-    sys.hp ??= { max: 10, value: 10 };
+    sys.hp ??= { max: 10, value: 10, temp: 0 };
     sys.hp.max = num(sys.hp.max, 10);
     sys.hp.value = num(sys.hp.value, sys.hp.max);
+    sys.hp.temp = Math.max(0, Math.round(num(sys.hp.temp, 0)));
 
     const level = num(sys.lvl, 1);
     sys.experience ??= { max: level * 100, value: 0 };
@@ -59,6 +60,10 @@ export class MyActor extends Actor {
 
     if (Number.isFinite(sys.hp?.max) && Number.isFinite(sys.hp?.value)) {
       sys.hp.value = Math.clamp(sys.hp.value, 0, sys.hp.max);
+    }
+
+    if (Number.isFinite(sys.hp?.temp)) {
+      sys.hp.temp = Math.max(0, Math.round(sys.hp.temp));
     }
 
     if (Number.isFinite(sys.experience?.max) && Number.isFinite(sys.experience?.value)) {
