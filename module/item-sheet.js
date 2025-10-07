@@ -158,42 +158,72 @@ export class PMDItemSheet extends BaseItemSheet {
 
     bindEffectControls(root, this.item, "item");
 
+    const getSanitizedPermanentEffects = () => {
+      const current = Array.isArray(this.item.system?.permanentEffects)
+        ? this.item.system.permanentEffects
+        : [];
+
+      const sanitized = current
+        .filter((effect) => effect && typeof effect === "object" && !Array.isArray(effect))
+        .map((effect) => {
+          const attribute = String(effect.attribute ?? "");
+          const mode = effect.mode === "subtract" ? "subtract" : "add";
+          const amountValue = Number(effect.amount ?? 0);
+          const amount = Number.isFinite(amountValue) ? amountValue : 0;
+          return { attribute, mode, amount };
+        });
+
+      if (!sanitized.length) {
+        const legacy =
+          typeof this.item.system?.permanentEffect === "object" &&
+          this.item.system?.permanentEffect !== null &&
+          !Array.isArray(this.item.system?.permanentEffect)
+            ? this.item.system.permanentEffect
+            : null;
+        if (legacy) {
+          const attribute = String(legacy.attribute ?? "");
+          const mode = legacy.mode === "subtract" ? "subtract" : "add";
+          const amountValue = Number(legacy.amount ?? 0);
+          const amount = Number.isFinite(amountValue) ? amountValue : 0;
+          sanitized.push({ attribute, mode, amount });
+        }
+      }
+
+      return sanitized;
+    };
+
     root.querySelectorAll(".permanent-effect-add").forEach((button) => {
       button.addEventListener("click", async (event) => {
         event.preventDefault();
         event.stopPropagation();
 
-        const current = Array.isArray(this.item.system?.permanentEffects)
-          ? this.item.system.permanentEffects
-          : [];
-
-        const sanitized = current
-          .filter((effect) => effect && typeof effect === "object" && !Array.isArray(effect))
-          .map((effect) => {
-            const attribute = String(effect.attribute ?? "");
-            const mode = effect.mode === "subtract" ? "subtract" : "add";
-            const amountValue = Number(effect.amount ?? 0);
-            const amount = Number.isFinite(amountValue) ? amountValue : 0;
-            return { attribute, mode, amount };
-          });
-
-        if (!sanitized.length) {
-          const legacy =
-            typeof this.item.system?.permanentEffect === "object" &&
-            this.item.system?.permanentEffect !== null &&
-            !Array.isArray(this.item.system?.permanentEffect)
-              ? this.item.system.permanentEffect
-              : null;
-          if (legacy) {
-            const attribute = String(legacy.attribute ?? "");
-            const mode = legacy.mode === "subtract" ? "subtract" : "add";
-            const amountValue = Number(legacy.amount ?? 0);
-            const amount = Number.isFinite(amountValue) ? amountValue : 0;
-            sanitized.push({ attribute, mode, amount });
-          }
-        }
+        const sanitized = getSanitizedPermanentEffects();
 
         sanitized.push({ attribute: "", mode: "add", amount: 0 });
+
+        await this.item.update({ "system.permanentEffects": sanitized });
+      });
+    });
+
+    root.querySelectorAll(".permanent-effect-remove").forEach((button) => {
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const indexRaw = Number(button.dataset.index ?? "-1");
+        if (!Number.isInteger(indexRaw) || indexRaw < 0) return;
+
+        const sanitized = getSanitizedPermanentEffects();
+        if (!sanitized.length) {
+          if (indexRaw === 0) {
+            await this.item.update({ "system.permanentEffects": [] });
+          }
+          return;
+        }
+
+        if (indexRaw >= sanitized.length) return;
+
+        sanitized.splice(indexRaw, 1);
 
         await this.item.update({ "system.permanentEffects": sanitized });
       });

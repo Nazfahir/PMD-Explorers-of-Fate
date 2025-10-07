@@ -595,31 +595,22 @@ export class MyActorSheet extends BaseActorSheet {
     const isHit = raw < finalThreshold;
 
     const baseDamageRaw = Number(this.actor.system?.basicattack ?? 0);
-    const attackStatRaw = Number(this.actor.system?.attack ?? 0);
-    const defenseStatRaw = targetActor ? Number(targetActor.system?.defense ?? 0) : 0;
-
     const baseDamage = Number.isFinite(baseDamageRaw) ? baseDamageRaw : 0;
-    const attackStat = Number.isFinite(attackStatRaw) ? attackStatRaw : 0;
-    const defenseStat = Number.isFinite(defenseStatRaw) ? defenseStatRaw : 0;
 
     let dmgBreakdownHTML = "";
     let finalDamageValue = null;
 
     if (isHit && targetActor) {
-      const basePlusAttack = baseDamage + attackStat;
-      let damage = basePlusAttack;
+      let damage = baseDamage;
       if (isCrit) damage *= 1.5;
-      damage -= defenseStat;
       const finalDamage = Math.max(1, Math.ceil(damage));
       finalDamageValue = finalDamage;
-      const defLine = `<div>− Def: <b>${defenseStat}</b></div>`;
       const finalNote = "<small>(redondeo ↑, mínimo 1)</small>";
       dmgBreakdownHTML = `
         <hr/>
         <div><b>Cálculo de Daño</b></div>
-        <div>Base (${baseDamage}) + Atk: <b>${basePlusAttack}</b></div>
+        <div>Daño base: <b>${baseDamage}</b></div>
         <div>Crítico: ${isCrit ? "Sí (×1.5)" : "No"}</div>
-        ${defLine}
         <div><b>Daño final: ${finalDamage}</b> ${finalNote}</div>
       `;
     }
