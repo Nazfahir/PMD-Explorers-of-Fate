@@ -344,24 +344,26 @@ export class MyActorSheet extends BaseActorSheet {
       if (Number.isFinite(bonus)) situationalBonus = bonus;
     }
 
-    const totalSkill = baseVal + situationalBonus;
     const threshold = mode === "critical"
-      ? Math.ceil(totalSkill / 2)
-      : totalSkill;
+      ? Math.ceil(baseVal / 2)
+      : baseVal;
 
     const roll = await (new Roll("1d100")).evaluate({ async: true });
-    const success = roll.total < threshold;
+    const adjustedTotal = this.actor.system?.soccerMode
+      ? roll.total - situationalBonus
+      : roll.total;
+    const success = adjustedTotal <= threshold;
 
-    const bonusSign = situationalBonus < 0 ? "-" : "+";
-    const bonusText = situationalBonus !== 0
-      ? ` ${bonusSign} ${Math.abs(situationalBonus)} = ${totalSkill}`
+    const bonusSign = situationalBonus < 0 ? "+" : "-";
+    const bonusText = this.actor.system?.soccerMode && situationalBonus !== 0
+      ? ` ${bonusSign} ${Math.abs(situationalBonus)} = ${adjustedTotal}`
       : "";
     const modeNote = this.actor.system?.soccerMode ? " (Modo Futbol)" : "";
 
     const flavor = `
       <div><strong>Tirada de ${label}</strong> (${mode === "critical" ? "Crítica" : "Normal"})</div>
-      <div>Umbral: <b>${threshold}</b> (habilidad: ${baseVal}${bonusText}${modeNote})</div>
-      <div>Resultado: <b>${roll.total}</b> → ${
+      <div>Umbral: <b>${threshold}</b> (habilidad: ${baseVal}${modeNote})</div>
+      <div>Resultado: <b>${roll.total}</b>${bonusText} → ${
         success ? '<span class="roll-success">Éxito</span>' : '<span class="roll-failure">Fallo</span>'
       }</div>
     `;
@@ -380,7 +382,7 @@ export class MyActorSheet extends BaseActorSheet {
         <div class="form-group">
           <label>Bono situacional para <b>${escapedLabel}</b>:</label>
           <input type="number" name="bonus" value="0" step="1" />
-          <p class="notes">Se suma al valor de la habilidad antes de calcular el umbral.</p>
+          <p class="notes">Se aplica al resultado del d100 tras la tirada (Modo Futbol).</p>
         </div>
       `;
       new Dialog({
