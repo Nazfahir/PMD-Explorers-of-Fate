@@ -612,7 +612,7 @@ export class MyActorSheet extends BaseActorSheet {
     const targetActors = this._getTargetActors();
     const baseCritThreshold = 10;
     const attackCritMod = Number(this.actor.system?.critAttackMod ?? 0);
-    const isHit = raw < finalThreshold;
+    const isHit = raw <= finalThreshold;
 
     const baseDamageRaw = Number(this.actor.system?.basicattack ?? 0);
     const baseDamage = Number.isFinite(baseDamageRaw) ? baseDamageRaw : 0;
@@ -621,7 +621,7 @@ export class MyActorSheet extends BaseActorSheet {
     const targetResults = targetActors.map((actor) => {
       const defenderCritMod = Number(actor.system?.critDefenseMod ?? 0);
       const critThreshold = baseCritThreshold + attackCritMod + defenderCritMod;
-      const isCritTarget = isHit && raw < critThreshold;
+      const isCritTarget = isHit && raw <= critThreshold;
       const name = actor.name ?? "Objetivo";
       const uuid = actor.uuid ?? "";
       let finalDamage = 0;
@@ -747,7 +747,7 @@ export class MyActorSheet extends BaseActorSheet {
     const moveCritMod = Number(item.system?.critThresholdMod ?? 0);
     const primaryDefenderCritMod = targetActor ? Number(targetActor.system?.critDefenseMod ?? 0) : 0;
     const primaryCritThreshold = baseCritThreshold + attackCritMod + primaryDefenderCritMod + moveCritMod;
-    const isHit = raw < finalThreshold;
+    const isHit = raw <= finalThreshold;
 
     // Gastar PP
     await item.update({ "system.pp.value": Math.max(0, curPP - 1) });
@@ -784,7 +784,7 @@ export class MyActorSheet extends BaseActorSheet {
     if (canPromptDamage) {
       damageOptions = await this._promptDamageOptions({
         itemName: item.name,
-        isCrit: isHit && raw < primaryCritThreshold,
+        isCrit: isHit && raw <= primaryCritThreshold,
         hasStab,
         effectiveness: autoEffectiveness,
         autoCalculated: Number.isFinite(autoEffectiveness)
@@ -813,7 +813,7 @@ export class MyActorSheet extends BaseActorSheet {
       const isImmune = canDealDamage && Number.isFinite(resolvedEffectiveness) && resolvedEffectiveness === 0;
       const defenderCritMod = Number(actor.system?.critDefenseMod ?? 0);
       const critThreshold = baseCritThreshold + attackCritMod + defenderCritMod + moveCritMod;
-      const isCritTarget = isHit && raw < critThreshold;
+      const isCritTarget = isHit && raw <= critThreshold;
       let finalDamage = 0;
       let canCalculateDamage = false;
       if (isHit && damageOptions && canDealDamage && !isImmune) {
@@ -892,8 +892,8 @@ export class MyActorSheet extends BaseActorSheet {
         for (let i = 0; i < additionalAttacks; i++) {
           const accRoll = await (new Roll("1d100")).evaluate({ async: true });
           const total = accRoll.total;
-          const hit = total < finalThreshold;
-          const critExtra = total < primaryCritThreshold;
+          const hit = total <= finalThreshold;
+          const critExtra = total <= primaryCritThreshold;
           const damage = hit && canCalcMultiDamage && primaryCanCalculate && !primaryImmune && baseDmg > 0 ? baseDmg : 0;
           if (damage > 0) {
             multiDamageTotal += damage;
