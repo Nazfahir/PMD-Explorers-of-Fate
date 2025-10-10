@@ -122,7 +122,7 @@ export class MyActorSheet extends ActorSheet {
 
   /**
    * Realiza la tirada 1d100 de HABILIDAD y publica el resultado en el chat.
-   * Éxito si (resultado < umbral). En crítica el umbral es ceil(skill/2).
+   * Éxito si (resultado <= umbral). En crítica el umbral es ceil(skill/2).
    */
   async _rollSkill(skillKey, label = skillKey) {
     const mode = await this._askRollMode();
@@ -132,7 +132,7 @@ export class MyActorSheet extends ActorSheet {
     const threshold = mode === "critical" ? Math.ceil(val / 2) : val;
 
     const roll = await (new Roll("1d100")).evaluate({ async: true });
-    const success = roll.total < threshold;
+    const success = roll.total <= threshold;
 
     const flavor = `
       <div><strong>Tirada de ${label}</strong> (${mode === "critical" ? "Crítica" : "Normal"})</div>
@@ -190,7 +190,7 @@ export class MyActorSheet extends ActorSheet {
    * - Verifica PP > 0
    * - Pide bono
    * - Tira 1d100
-   * - Determina crítico (raw < 10) y acierto (raw+bono < accuracy)
+   * - Determina crítico (raw <= 10) y acierto (raw+bono <= accuracy)
    * - Gasta 1 PP SIEMPRE que se usa (acierte o no)
    */
 async _useMove(item) {
@@ -214,8 +214,8 @@ async _useMove(item) {
   // 4) Tirada d100
   const roll = await (new Roll("1d100")).evaluate({ async: true });
   const raw = roll.total;            // resultado del dado SIN bono
-  const isCrit = raw < 10;           // crítico si resultado crudo < 10
-  const isHit  = raw < finalThreshold; // acierta si crudo < (accuracy + bono)
+  const isCrit = raw <= 10;          // crítico si resultado crudo <= 10
+  const isHit  = raw <= finalThreshold; // acierta si crudo <= (accuracy + bono)
 
   // 5) Gasto de PP (siempre que se usa el movimiento)
   const newPP = Math.max(0, curPP - 1);
